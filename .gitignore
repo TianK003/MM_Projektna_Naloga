@@ -4,4 +4,6 @@
 *.fdb_latexmk
 *.fls
 *.synctex.gz
+*.out
+projektna_naloga.pdf
 __pycache__/
