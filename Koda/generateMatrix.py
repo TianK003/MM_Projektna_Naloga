@@ -48,6 +48,5 @@ def create_matrix(folder, file_names):
 
 def generate_matrix(folder):
     file_names = os.listdir(folder)
-    matrix = create_matrix(folder, file_names)
-    print(matrix)
+    return create_matrix(folder, file_names)
     
