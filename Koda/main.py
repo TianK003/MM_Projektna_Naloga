@@ -6,7 +6,8 @@ import generateMatrix as gm
 # For optimized search, we use a hashmap to store the index of the word in the matrix
 
 DOCUMENT_FOLDER = "documents"
-k = 2
+k = 4
+cosinus_threadhold = 0.9
 
 def matrix_to_file(matrix, file_name):
     # For debugging purposes, write the matrix to a file
@@ -16,17 +17,56 @@ def matrix_to_file(matrix, file_name):
 
 def svd(matrix, k):
     U, s, V = np.linalg.svd(matrix, full_matrices=False) # V is already transposed
-    U_k = U[:, :k]
+    u_k = U[:, :k]
     s_k = np.diag(s[:k])
-    V_k = V[:k, :]
-    matrix_k = np.dot(np.dot(U_k, s_k), V_k)
-    return matrix_k
+    v_k = V[:k, :]
+    # matrix_k = np.dot(np.dot(U_k, s_k), V_k)
+    return u_k, s_k, v_k
+
+def build_query_vector(prompt, word_map, word_list):
+    # Create a query vector from the prompt
+    query_vector = np.zeros(len(word_list))
+    words = prompt.split()
+    for word in words:
+        if word in word_map:
+            query_vector[word_map[word]] += 1
+    return query_vector
+
+def s_k_inverse(s_k):
+    # Invert the diagonal matrix s_k
+    for i in range(s_k.shape[0]):
+        if s_k[i, i] != 0:
+            s_k[i, i] = 1 / s_k[i, i]
+    return s_k
+
+def cosine_similarity(v1, v2):
+    # Find the angle between two vectors
+    return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+
+def find_closest_documents(q_altered, v_k, file_names):
+    # Find the closest documents to the query vector
+    # q_altered is the query vector altered by the SVD
+    # v_k is the V matrix from the SVD
+    closest_documents = []
+    for i in range(v_k.shape[1]):
+        v = v_k[:, i]
+        similarity = abs(cosine_similarity(q_altered, v))
+        if similarity > cosinus_threadhold:
+            closest_documents.append(i)
+    
+    closest_document_names = [file_names[i] for i in closest_documents]
+    
+    return closest_document_names
 
 def main():
     # Generate some data
-    matrix = gm.generate_matrix(DOCUMENT_FOLDER)
-    matrix_k = svd(matrix, k)
-    
+    prompt = "Kako pogost je kisik v ozračju?"
+    file_names, word_map, word_list, matrix = gm.generate_matrix(DOCUMENT_FOLDER)
+    u_k, s_k, v_k = svd(matrix, k)
+    q = build_query_vector(prompt, word_map, word_list)
+    q_altered = np.dot(np.dot(q.T, u_k), s_k_inverse(s_k))
+    closest_documents = find_closest_documents(q_altered, v_k, file_names)
+    print("The closest document to the prompt is: " + str(closest_documents))
     
 if __name__ == "__main__":
     main()

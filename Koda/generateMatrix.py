@@ -44,7 +44,7 @@ def create_matrix(folder, file_names):
             matrix[word_map[word], j] += 1
     
     
-    return matrix
+    return file_names, word_map, word_list, matrix
 
 def generate_matrix(folder):
     file_names = os.listdir(folder)
