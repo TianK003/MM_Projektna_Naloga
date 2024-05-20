@@ -8,8 +8,8 @@ import sys
 # For optimized search, we use a hashmap to store the index of the word in the matrix
 
 DOCUMENT_FOLDER = "documents"
-k = 4
-cosinus_threadhold = 0.7
+k = 10
+cosinus_threadhold = 0.4
 
 def matrix_to_file(matrix, file_name):
     # For debugging purposes, write the matrix to a file
@@ -65,13 +65,18 @@ def find_closest_documents(q_altered, v_k, file_names):
     return closest_document_names
 
 def main():
-    debug.set_debug_level(1)
+    debug.set_debug_level(0)
     
     # Generate some data
     if len(sys.argv) <= 1:
         print("Please provide a prompt as an argument")
         return
+    
     prompt = sys.argv[1]
+    for i in range(2, len(sys.argv)):
+        prompt += " " + sys.argv[i]
+    debug.log("Prompt: " + prompt)
+    
     file_names, word_map, word_list, matrix = gm.generate_matrix(DOCUMENT_FOLDER)
     matrix_to_file(matrix, "matrix.txt")
     u_k, s_k, v_k = svd(matrix, k)

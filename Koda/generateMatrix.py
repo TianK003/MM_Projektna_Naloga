@@ -64,8 +64,7 @@ def create_complex_matrix(matrix):
                 continue
             p_sum += p_ij * np.log(p_ij) / np.log(n)
         
-        p_sum = -p_sum
-        g_i = 1 - p_sum
+        g_i = 1 + p_sum
         
         for j in range(n):
             local_frequency = matrix[i, j]
