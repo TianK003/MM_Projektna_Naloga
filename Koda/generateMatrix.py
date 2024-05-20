@@ -1,6 +1,7 @@
 import docx
 import numpy as np
 import os
+import debug
 
 def read_docx_file(filename):
     doc = docx.Document(filename)
@@ -12,12 +13,14 @@ def read_docx_file(filename):
 def read_file(filename):
     return read_docx_file(filename)
 
-def create_matrix(folder, file_names):
+def create_frequency_matrix(folder, file_names):
+    debug.log("Creating frequency matrix")
     column_count = len(file_names)
     word_set = set() # Set of all words
     word_map = {} # Map of word to index
     
     # Create a set of all words (no duplicates)
+    debug.log("Creating word set")
     for file_name in file_names:
         full_text = read_file(os.path.join(folder, file_name))
         words = full_text.split()
@@ -43,10 +46,41 @@ def create_matrix(folder, file_names):
         for word in words:
             matrix[word_map[word], j] += 1
     
+    debug.log("Matrix created")
+    return word_map, word_list, matrix
+
+def create_complex_matrix(matrix):
+    debug.log("Creating complex matrix")
     
-    return file_names, word_map, word_list, matrix
+    n = matrix.shape[1] # Number of documents
+    
+    for i in range(matrix.shape[0]): # Loop through all words
+        global_frequency = np.sum(matrix[i, :]) # Global frequency of the word
+        p_sum = 0
+        for j in range(n): # Loop through all documents
+            local_frequency = matrix[i, j]
+            p_ij = local_frequency / global_frequency
+            if p_ij == 0:
+                continue
+            p_sum += p_ij * np.log(p_ij) / np.log(n)
+        
+        p_sum = -p_sum
+        g_i = 1 - p_sum
+        
+        for j in range(n):
+            local_frequency = matrix[i, j]
+            l_ij = np.log(local_frequency + 1)
+            matrix[i, j] = l_ij * g_i
+            
+    debug.log("Complex matrix created")
+    return matrix
 
 def generate_matrix(folder):
-    file_names = os.listdir(folder)
-    return create_matrix(folder, file_names)
+    debug.log("Generating matrix")
     
+    file_names = os.listdir(folder)
+    # Matrix of the number of times a word appears in each document
+    word_map, word_list, matrix = create_frequency_matrix(folder, file_names)
+    # Matrix based on point 4, local and global importance optimization. Uncomment for optimization
+    matrix = create_complex_matrix(matrix)
+    return file_names, word_map, word_list, matrix

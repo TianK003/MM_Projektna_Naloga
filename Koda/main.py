@@ -1,5 +1,7 @@
 import numpy as np
 import generateMatrix as gm
+import debug
+import sys
 
 # NOTES for later:
 # Matrix of words: Every document is a column, every word is a row
@@ -7,7 +9,7 @@ import generateMatrix as gm
 
 DOCUMENT_FOLDER = "documents"
 k = 4
-cosinus_threadhold = 0.9
+cosinus_threadhold = 0.7
 
 def matrix_to_file(matrix, file_name):
     # For debugging purposes, write the matrix to a file
@@ -41,6 +43,8 @@ def s_k_inverse(s_k):
 
 def cosine_similarity(v1, v2):
     # Find the angle between two vectors
+    if not np.any(v1) or not np.any(v2):
+        return 0
     return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
 
 def find_closest_documents(q_altered, v_k, file_names):
@@ -52,16 +56,24 @@ def find_closest_documents(q_altered, v_k, file_names):
         v = v_k[:, i]
         similarity = abs(cosine_similarity(q_altered, v))
         if similarity > cosinus_threadhold:
-            closest_documents.append(i)
+            closest_documents.append([i, similarity])
     
-    closest_document_names = [file_names[i] for i in closest_documents]
+    # Sort the documents by similarity, highest similarity first
+    closest_document_names = [[file_names[i],similarity] for i,similarity in closest_documents]
+    closest_document_names = sorted(closest_document_names, key=lambda x: x[1])[::-1]
     
     return closest_document_names
 
 def main():
+    debug.set_debug_level(1)
+    
     # Generate some data
-    prompt = "Kako pogost je kisik v ozračju?"
+    if len(sys.argv) <= 1:
+        print("Please provide a prompt as an argument")
+        return
+    prompt = sys.argv[1]
     file_names, word_map, word_list, matrix = gm.generate_matrix(DOCUMENT_FOLDER)
+    matrix_to_file(matrix, "matrix.txt")
     u_k, s_k, v_k = svd(matrix, k)
     q = build_query_vector(prompt, word_map, word_list)
     q_altered = np.dot(np.dot(q.T, u_k), s_k_inverse(s_k))
