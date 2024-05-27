@@ -8,8 +8,8 @@ import sys
 # For optimized search, we use a hashmap to store the index of the word in the matrix
 
 DOCUMENT_FOLDER = "documents"
-k = 10
-cosinus_threadhold = 0.4
+k = 4
+cosinus_threadhold = 0.9
 
 def matrix_to_file(matrix, file_name):
     # For debugging purposes, write the matrix to a file
@@ -19,6 +19,8 @@ def matrix_to_file(matrix, file_name):
 
 def svd(matrix, k):
     U, s, V = np.linalg.svd(matrix, full_matrices=False) # V is already transposed
+    if k > len(s):
+        k = len(s)
     u_k = U[:, :k]
     s_k = np.diag(s[:k])
     v_k = V[:k, :]
@@ -78,7 +80,6 @@ def main():
     debug.log("Prompt: " + prompt)
     
     file_names, word_map, word_list, matrix = gm.generate_matrix(DOCUMENT_FOLDER)
-    matrix_to_file(matrix, "matrix.txt")
     u_k, s_k, v_k = svd(matrix, k)
     q = build_query_vector(prompt, word_map, word_list)
     q_altered = np.dot(np.dot(q.T, u_k), s_k_inverse(s_k))

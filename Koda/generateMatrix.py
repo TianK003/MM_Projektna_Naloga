@@ -29,7 +29,7 @@ def create_frequency_matrix(folder, file_names):
     
     # Create a list of all words and sort them
     word_list = list(word_set)
-    word_list.sort()
+    # word_list.sort()
     
     # Create empty matrix with rows = number of words and columns = number of documents
     row_count = len(word_list)
