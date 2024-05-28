@@ -2,14 +2,35 @@ import numpy as np
 import generateMatrix as gm
 import debug
 import sys
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.decomposition import TruncatedSVD
+from sklearn.utils.extmath import randomized_svd
+import argparse
+import os
+import shutil
 
 # NOTES for later:
 # Matrix of words: Every document is a column, every word is a row
 # For optimized search, we use a hashmap to store the index of the word in the matrix
 
-DOCUMENT_FOLDER = "documents"
-k = 4
-cosinus_threadhold = 0.9
+document_folder = "documents"
+k = 1000
+cosinus_threadhold = 0.6
+modes = ["unoptimized", "optimized"]
+mode = modes[0]
+data_limit = 1000000000
+
+save_files_folder = os.path.join("savedMatricies", "savedMatricies_") # Appended in argsparse
+u_file = "U.npy"
+s_file = "s.npy"
+v_file = "V.npy"
+file_names_file = "file_names.npy"
+word_map_file = "word_map.npy"
+word_list_file = "word_list.npy"
+matrix_file = "matrix.npy"
+recompute = False
+add_new_documents = False
+
 
 def matrix_to_file(matrix, file_name):
     # For debugging purposes, write the matrix to a file
@@ -17,14 +38,36 @@ def matrix_to_file(matrix, file_name):
     f.write(np.array2string(matrix, threshold=np.inf, max_line_width=np.inf))
     f.close()
 
-def svd(matrix, k):
-    U, s, V = np.linalg.svd(matrix, full_matrices=False) # V is already transposed
+def compute_svd(matrix, k):
+    debug.log("Performing SVD")
+    U, s, V = randomized_svd(matrix, n_components=k)
+    debug.log("SVD performed")
+    
+    return U, s, V
+
+def svd(matrix, k, files_saved):
+    
+    if files_saved:
+        debug.log("Loading SVD")
+        U = np.load(os.path.join(save_files_folder, u_file))
+        s = np.load(os.path.join(save_files_folder, s_file))
+        V = np.load(os.path.join(save_files_folder, v_file))
+        debug.log("SVD loaded")
+    else:
+        debug.log("Computing SVD")
+        U, s, V = compute_svd(matrix, k)
+        
+        debug.log("Saving SVD")
+        np.save(os.path.join(save_files_folder, u_file), U)
+        np.save(os.path.join(save_files_folder, s_file), s)
+        np.save(os.path.join(save_files_folder, v_file), V)
+    
     if k > len(s):
         k = len(s)
     u_k = U[:, :k]
     s_k = np.diag(s[:k])
     v_k = V[:k, :]
-    # matrix_k = np.dot(np.dot(U_k, s_k), V_k)
+        
     return u_k, s_k, v_k
 
 def build_query_vector(prompt, word_map, word_list):
@@ -66,25 +109,137 @@ def find_closest_documents(q_altered, v_k, file_names):
     
     return closest_document_names
 
+def setup_parser():
+    global document_folder
+    global k
+    global cosinus_threadhold
+    global modes
+    global mode
+    global save_files_folder
+    global recompute
+    global data_limit
+    global add_new_documents
+    parser = argparse.ArgumentParser(description='Find the closest document to a prompt')
+    
+    parser.add_argument('--folder', type=str, help='The folder containing the documents. Default is "' + document_folder + '"', default=document_folder)
+    parser.add_argument('-o', '--online', help='Whether to use the online library of data.', action='store_true')
+    parser.add_argument('--mode', type=str, help='The mode to run in. Options are ' + str(modes) + '. Default is ' + modes[0] + '.', default=modes[0])
+    parser.add_argument('-k', '--k', type=int, help='The number of singular values to use. Default is ' + str(k) + '.', default=k)
+    parser.add_argument('--cosine', type=float, help='The cosine similarity threshold. Default is ' + str(cosinus_threadhold) + '.', default=cosinus_threadhold)
+    parser.add_argument('-d', '--debug', help='Print debug information.', action='store_true')
+    parser.add_argument('--compute', help='Compute all files again.', action='store_true')
+    parser.add_argument('-l', '--limit', type=int, help='The max number of documents to use. Default is ' + str(data_limit) + '.', default=data_limit)
+    parser.add_argument('-a', '--add', help='Add all new documents to the database.', action='store_true')
+    args = parser.parse_args()
+    
+    
+    if args.online:
+        document_folder = ""
+    if args.folder and not args.online:
+        document_folder = args.folder
+    if args.k:
+        k = args.k
+    if args.cosine:
+        cosinus_threadhold = args.cosine
+    if args.mode:
+        if args.mode not in modes:
+            debug.log("Invalid mode. Options are " + str(modes))
+            exit()
+        mode = args.mode
+    if args.debug:
+        debug.set_debug_level(1)
+    if args.compute:
+        recompute = True
+    if args.limit:
+        data_limit = args.limit
+    if args.add:
+        add_new_documents = True
+    
+    save_files_folder += mode + "_"
+    if args.online:
+        save_files_folder += "online"
+    else:
+        save_files_folder += document_folder
+    
+    debug.log("Folder: " + document_folder)
+    debug.log("K: " + str(k))
+    debug.log("Cosine: " + str(cosinus_threadhold))
+    debug.log("Mode: " + args.mode)
+    debug.log("Online: " + str(args.online))
+
+def check_saved():
+    global files_saved
+    
+    files_saved = True
+    if not os.path.isdir(save_files_folder):
+        files_saved = False
+    if not os.path.exists(os.path.join(save_files_folder, u_file)):
+        files_saved = False
+    if not os.path.exists(os.path.join(save_files_folder, s_file)):
+        files_saved = False
+    if not os.path.exists(os.path.join(save_files_folder, v_file)):
+        files_saved = False
+    if not os.path.exists(os.path.join(save_files_folder, file_names_file)):
+        files_saved = False
+    if not os.path.exists(os.path.join(save_files_folder, word_map_file)):
+        files_saved = False
+    if not os.path.exists(os.path.join(save_files_folder, word_list_file)):
+        files_saved = False
+    if not os.path.exists(os.path.join(save_files_folder, matrix_file)):
+        files_saved = False
+    
+    if recompute:
+        files_saved = False
+    
+    
+    if not files_saved:
+        debug.log("SVD not saved")
+        if os.path.isdir(save_files_folder):
+            shutil.rmtree(save_files_folder)
+        os.makedirs(save_files_folder)
+    
+        
+    return files_saved
+
+def run():
+    files_saved = check_saved()
+    file_names, word_map, word_list, matrix = None, None, None, None
+    if not files_saved:
+        optimize = False
+        if mode == modes[1]:
+            optimize = True
+        file_names, word_map, word_list, matrix = gm.generate_matrix(document_folder, optimize, data_limit)
+        np.save(os.path.join(save_files_folder, file_names_file), file_names)
+        np.save(os.path.join(save_files_folder, word_map_file), word_map)
+        np.save(os.path.join(save_files_folder, word_list_file), word_list)
+        np.save(os.path.join(save_files_folder, matrix_file), matrix)
+    else:
+        file_names = np.load(os.path.join(save_files_folder, file_names_file), allow_pickle=True).tolist()
+        word_map = np.load(os.path.join(save_files_folder, word_map_file), allow_pickle=True).item()
+        word_list = np.load(os.path.join(save_files_folder, word_list_file), allow_pickle=True).tolist()
+        matrix = np.load(os.path.join(save_files_folder, matrix_file))
+    
+    print(file_names)
+    
+    u_k, s_k, v_k = svd(matrix, k, files_saved)
+    
+    if add_new_documents:
+        gm.add_new_documents(document_folder, file_names, word_map, word_list, matrix, save_files_folder)
+    
+    
+    while True:
+        prompt = input("Enter a prompt (q/quit/exit to quit): ")
+        if prompt == "q" or prompt == "quit" or prompt == "exit":
+            break
+        q = build_query_vector(prompt, word_map, word_list)
+        q_altered = np.dot(np.dot(q.T, u_k), s_k_inverse(s_k))
+        closest_documents = find_closest_documents(q_altered, v_k, file_names)
+        print("The closest document to the prompt is: " + str(closest_documents))
+
 def main():
-    debug.set_debug_level(0)
+    setup_parser()
     
-    # Generate some data
-    if len(sys.argv) <= 1:
-        print("Please provide a prompt as an argument")
-        return
-    
-    prompt = sys.argv[1]
-    for i in range(2, len(sys.argv)):
-        prompt += " " + sys.argv[i]
-    debug.log("Prompt: " + prompt)
-    
-    file_names, word_map, word_list, matrix = gm.generate_matrix(DOCUMENT_FOLDER)
-    u_k, s_k, v_k = svd(matrix, k)
-    q = build_query_vector(prompt, word_map, word_list)
-    q_altered = np.dot(np.dot(q.T, u_k), s_k_inverse(s_k))
-    closest_documents = find_closest_documents(q_altered, v_k, file_names)
-    print("The closest document to the prompt is: " + str(closest_documents))
+    run()
     
 if __name__ == "__main__":
     main()

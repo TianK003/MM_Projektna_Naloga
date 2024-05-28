@@ -2,6 +2,53 @@ import docx
 import numpy as np
 import os
 import debug
+from sklearn.datasets import fetch_20newsgroups
+import sys
+
+matrix = None
+
+def add_new_document(A, U, S, V, a_new):
+    """
+    Adds a new document to the existing term-document matrix and updates the SVD components.
+    
+    Parameters:
+    A (numpy.ndarray): Existing term-document matrix.
+    U (numpy.ndarray): Existing left singular vectors.
+    S (numpy.ndarray): Existing singular values (diagonal matrix).
+    V (numpy.ndarray): Existing right singular vectors.
+    a_new (numpy.ndarray): New document column vector.
+    
+    Returns:
+    tuple: Updated (U, S, V) matrices.
+    """
+    # Compute the projection of a_new on the existing left singular vectors U
+    p = np.dot(U.T, a_new)
+    
+    # Compute the residual vector r
+    r = a_new - np.dot(U, p)
+    
+    # If r is approximately zero, a_new lies in the subspace spanned by U
+    if np.linalg.norm(r) < 1e-10:
+        # Form the augmented matrices
+        U_k = U
+        S_k = np.vstack([np.hstack([S, p.reshape(-1, 1)]), np.zeros((1, S.shape[1] + 1))])
+        V_k = np.vstack([np.hstack([V, np.zeros((V.shape[0], 1))]), np.zeros((1, V.shape[1] + 1))])
+        V_k[-1, -1] = 1
+    else:
+        # Normalize r to get the new singular vector component
+        r = r / np.linalg.norm(r)
+        
+        # Form the augmented matrices
+        U_k = np.hstack([U, r.reshape(-1, 1)])
+        S_k = np.vstack([np.hstack([S, p.reshape(-1, 1)]), np.zeros((1, S.shape[1] + 1))])
+        S_k[-1, -1] = np.linalg.norm(r)
+        V_k = np.vstack([np.hstack([V, np.zeros((V.shape[0], 1))]), np.zeros((1, V.shape[1] + 1))])
+        V_k[-1, -1] = 1
+    
+    return U_k, S_k, V_k
+
+def add_new_documents():
+    pass
 
 def read_docx_file(filename):
     doc = docx.Document(filename)
@@ -13,16 +60,35 @@ def read_docx_file(filename):
 def read_file(filename):
     return read_docx_file(filename)
 
-def create_frequency_matrix(folder, file_names):
+def get_data(folder, data_limit):
+    debug.log("Getting data")
+    if folder == "":
+        newsgroups_train = fetch_20newsgroups(subset='train')
+        if data_limit>newsgroups_train.filenames.shape[0]:
+            debug.log("No data limit")
+            data_limit = newsgroups_train.filenames.shape[0]
+        return newsgroups_train.filenames[:data_limit], newsgroups_train.data[:data_limit]
+    
+    file_names = os.listdir(folder)
+    titles = []
+    data = []
+    for file_name in file_names:
+        full_text = read_file(os.path.join(folder, file_name))
+        data.append(full_text)
+        titles.append(file_name)
+    debug.log("Data gotten")
+    return titles, data
+
+def create_frequency_matrix(data): # data is a list of strings. Those strings are the content of the documents
     debug.log("Creating frequency matrix")
-    column_count = len(file_names)
+    column_count = len(data)
     word_set = set() # Set of all words
     word_map = {} # Map of word to index
     
     # Create a set of all words (no duplicates)
     debug.log("Creating word set")
-    for file_name in file_names:
-        full_text = read_file(os.path.join(folder, file_name))
+    for i in range(column_count):
+        full_text = data[i]
         words = full_text.split()
         for word in words:
             word_set.add(word)
@@ -41,7 +107,7 @@ def create_frequency_matrix(folder, file_names):
     
     # Fill the matrix with the count of each word in each document
     for j in range(column_count):
-        full_text = read_file(os.path.join(folder, file_names[j]))
+        full_text = data[j]
         words = full_text.split()
         for word in words:
             matrix[word_map[word], j] += 1
@@ -49,37 +115,47 @@ def create_frequency_matrix(folder, file_names):
     debug.log("Matrix created")
     return word_map, word_list, matrix
 
+def matrix_to_file(matrix, file_name):
+    # For debugging purposes, write the matrix to a file
+    f = open(file_name, 'w' )
+    f.write(np.array2string(matrix, threshold=np.inf, max_line_width=np.inf))
+    f.close()
+
 def create_complex_matrix(matrix):
     debug.log("Creating complex matrix")
     
     n = matrix.shape[1] # Number of documents
     
-    for i in range(matrix.shape[0]): # Loop through all words
-        global_frequency = np.sum(matrix[i, :]) # Global frequency of the word
-        p_sum = 0
-        for j in range(n): # Loop through all documents
-            local_frequency = matrix[i, j]
-            p_ij = local_frequency / global_frequency
-            if p_ij == 0:
-                continue
-            p_sum += p_ij * np.log(p_ij) / np.log(n)
-        
-        g_i = 1 + p_sum
-        
-        for j in range(n):
-            local_frequency = matrix[i, j]
-            l_ij = np.log(local_frequency + 1)
-            matrix[i, j] = l_ij * g_i
-            
+    debug.log("Number of words: " + str(matrix.shape[0]))
+    
+    debug.log("Number of documents: " + str(n))
+    
+    debug.log("Generating percentage matrix")
+    percentageMatrix = matrix/matrix.sum(axis=1)[:,None]
+    debug.log("Percentage matrix generated")
+    percentageMatrix = percentageMatrix * np.log(percentageMatrix)
+    percentageMatrix = np.nan_to_num(percentageMatrix)
+    debug.log("Percentage matrix log multiplied")
+    percentageMatrix = percentageMatrix / np.log(n)
+    debug.log("Percentage matrix divided by log(n)")
+    percentageMatrix = percentageMatrix.sum(axis=1)
+    debug.log("Percentage matrix summed")
+    percentageMatrix = 1 + percentageMatrix # Matrika globalnih mer
+    
+    matrix = np.log(matrix + 1)
+    matrix = matrix * percentageMatrix[:,None]
+    
     debug.log("Complex matrix created")
     return matrix
 
-def generate_matrix(folder):
+def generate_matrix(folder = "", optimize = False, data_limit = 100000000):
     debug.log("Generating matrix")
     
-    file_names = os.listdir(folder)
+    # file_names = os.listdir(folder)
     # Matrix of the number of times a word appears in each document
-    word_map, word_list, matrix = create_frequency_matrix(folder, file_names)
+    titles, data = get_data(folder, data_limit)
+    word_map, word_list, matrix = create_frequency_matrix(data)
     # Matrix based on point 4, local and global importance optimization. Uncomment for optimization
-    matrix = create_complex_matrix(matrix)
-    return file_names, word_map, word_list, matrix
+    if optimize:
+        matrix = create_complex_matrix(matrix)
+    return titles, word_map, word_list, matrix
