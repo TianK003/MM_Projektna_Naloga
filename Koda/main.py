@@ -64,6 +64,9 @@ def svd(matrix, k, files_saved):
     
     if k > len(s):
         k = len(s)
+    if k > data_limit:
+        k = data_limit
+    debug.log("k: " + str(k))
     u_k = U[:, :k]
     s_k = np.diag(s[:k])
     v_k = V[:k, :]
@@ -96,6 +99,7 @@ def find_closest_documents(q_altered, v_k, file_names):
     # Find the closest documents to the query vector
     # q_altered is the query vector altered by the SVD
     # v_k is the V matrix from the SVD
+    debug.log("Vk shape: " + str(v_k.shape))
     closest_documents = []
     for i in range(v_k.shape[1]):
         v = v_k[:, i]
@@ -108,6 +112,46 @@ def find_closest_documents(q_altered, v_k, file_names):
     closest_document_names = sorted(closest_document_names, key=lambda x: x[1])[::-1]
     
     return closest_document_names
+
+def analyze_results(closest_documents):
+    # Print the results of the search
+    
+    if len(closest_documents) == 0:
+        print("\033[94mNo documents found \033[0m")
+        return
+    
+    while True:
+        print("\n")
+        print("\033[94mClosest documents: \033[0m")
+        i = 0
+        for document in closest_documents:
+            print("\033[95m" + str(i) + ": ", end="\033[0m")
+            print(document[0] + " " + str(document[1]))
+            i+=1
+        
+        selected_document = input("\033[92mEnter the number of the document to view\033[0m (n/new for new prompt): ")
+        if selected_document == "q" or selected_document == "quit" or selected_document == "exit":
+            exit(0)
+        if selected_document == "n" or selected_document == "new":
+            break
+        
+        try:
+            selected_document = int(selected_document)
+            if selected_document < 0 or selected_document >= len(closest_documents):
+                print("Invalid document number")
+                continue
+        except:
+            print("Invalid document number")
+            continue
+        
+        print(closest_documents[selected_document][0])
+        temp_file_names, temp_data = gm.get_data(document_folder, data_limit)
+        
+        index = np.nonzero(np.array(temp_file_names) == closest_documents[selected_document][0])[0][0]
+        print("-"*os.get_terminal_size().columns)
+        print(temp_data[index])
+        print("-"*os.get_terminal_size().columns)
+        
 
 def setup_parser():
     global document_folder
@@ -156,10 +200,12 @@ def setup_parser():
         add_new_documents = True
     
     save_files_folder += mode + "_"
+    save_files_folder += str(data_limit) + "_"
     if args.online:
         save_files_folder += "online"
     else:
         save_files_folder += document_folder
+    
     
     debug.log("Folder: " + document_folder)
     debug.log("K: " + str(k))
@@ -170,6 +216,7 @@ def setup_parser():
 def check_saved():
     global files_saved
     
+    debug.log("Checking sava data")
     files_saved = True
     if not os.path.isdir(save_files_folder):
         files_saved = False
@@ -193,7 +240,7 @@ def check_saved():
     
     
     if not files_saved:
-        debug.log("SVD not saved")
+        debug.log("Data not saved")
         if os.path.isdir(save_files_folder):
             shutil.rmtree(save_files_folder)
         os.makedirs(save_files_folder)
@@ -202,39 +249,46 @@ def check_saved():
     return files_saved
 
 def run():
+    global k
+    global document_folder
+    
     files_saved = check_saved()
     file_names, word_map, word_list, matrix = None, None, None, None
+    
+    debug.log("Getting data")
     if not files_saved:
         optimize = False
         if mode == modes[1]:
             optimize = True
+        
+        debug.log("Computing data")
         file_names, word_map, word_list, matrix = gm.generate_matrix(document_folder, optimize, data_limit)
         np.save(os.path.join(save_files_folder, file_names_file), file_names)
         np.save(os.path.join(save_files_folder, word_map_file), word_map)
         np.save(os.path.join(save_files_folder, word_list_file), word_list)
         np.save(os.path.join(save_files_folder, matrix_file), matrix)
     else:
+        debug.log("Reading saved data")
         file_names = np.load(os.path.join(save_files_folder, file_names_file), allow_pickle=True).tolist()
         word_map = np.load(os.path.join(save_files_folder, word_map_file), allow_pickle=True).item()
         word_list = np.load(os.path.join(save_files_folder, word_list_file), allow_pickle=True).tolist()
         matrix = np.load(os.path.join(save_files_folder, matrix_file))
     
-    print(file_names)
-    
     u_k, s_k, v_k = svd(matrix, k, files_saved)
     
     if add_new_documents:
+        debug.log("Adding new documents")
         gm.add_new_documents(document_folder, file_names, word_map, word_list, matrix, save_files_folder)
     
     
     while True:
-        prompt = input("Enter a prompt (q/quit/exit to quit): ")
+        prompt = input("\033[92mEnter a prompt\033[0m (q/quit/exit to quit): ")
         if prompt == "q" or prompt == "quit" or prompt == "exit":
             break
         q = build_query_vector(prompt, word_map, word_list)
         q_altered = np.dot(np.dot(q.T, u_k), s_k_inverse(s_k))
         closest_documents = find_closest_documents(q_altered, v_k, file_names)
-        print("The closest document to the prompt is: " + str(closest_documents))
+        analyze_results(closest_documents)
 
 def main():
     setup_parser()
