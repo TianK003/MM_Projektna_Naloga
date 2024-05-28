@@ -116,6 +116,15 @@ Our initial approach involves the construction of a basic frequency matrix, whic
 The primary outputs from this process include a list of documents ranked by their relevance to the input query. These results help identify the most pertinent documents without the need to manually sift through the entire dataset.
 
 
+\subsection{Optimized Solution}
+
+Looking further to improve our search methods, a key challenge lies in managing the influence of word frequencies. Common words can dominate search results, while rare words might disproportionately affect outcomes, even if they're informative. To solve this problem, we have implemented an optimization technique for the term-document matrix that helps ensure no single group of words skews the results too much.
+
+\bigskip
+\noindent Our optimized solution improves previous method by substituting word frequencies in our matrix with more sophisticated metrics. These include a local measure that employs logarithmic transformations of word frequencies, and a global measure derived from entropy. This approach ensures that the impact of each word on search results accurately reflects its genuine informational value while maintaining a balanced and effective retrieval system.
+
+
+\subsection{Additional Improvements}
 
 
 \newpage
