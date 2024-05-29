@@ -21,5 +21,5 @@ def progress(current, total, without_debug=False):
     sys.stdout.write('\r')
     percentage = 100 * current / total
     num_symbols = int(percentage/100*20)
-    sys.stdout.write("[%-20s] %d%% " % ('='*(num_symbols), int(percentage)))
+    sys.stdout.write("[\033[92m%-20s\033[0m] %d%% " % ('='*(num_symbols), int(percentage)))
     sys.stdout.flush()

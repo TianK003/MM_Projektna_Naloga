@@ -89,10 +89,11 @@ def build_query_vector(prompt, word_map, word_list):
 
 def s_k_inverse(s_k):
     # Invert the diagonal matrix s_k
+    inverteds_k = np.zeros(s_k.shape)
     for i in range(s_k.shape[0]):
         if s_k[i, i] != 0:
-            s_k[i, i] = 1 / s_k[i, i]
-    return s_k
+            inverteds_k[i, i] = 1 / s_k[i, i]
+    return inverteds_k
 
 def cosine_similarity(v1, v2):
     # Find the angle between two vectors
@@ -110,7 +111,7 @@ def find_closest_documents(q_altered, v_k, file_names):
     for i in range(v_k.shape[1]):
         v = v_k[:, i]
         similarity = abs(cosine_similarity(q_altered, v))
-        if similarity > cosinus_threadhold:
+        if similarity >= cosinus_threadhold:
             closest_documents.append([i, similarity])
     
     # Sort the documents by similarity, highest similarity first
@@ -123,11 +124,10 @@ def testing_analysis(closest_documents, subject, temp_file_names, temp_data):
     global testing_score
     # debug.log("Testing analysis")
     for i in range(len(closest_documents)):
-        if i > 10:
-            break
         index = np.nonzero(np.array(temp_file_names) == closest_documents[i][0])[0][0]
         current_data = temp_data[index]
-        gotten_subject = gm.get_subject_from_document(current_data)
+        gotten_subject = gm.get_subject_from_document(current_data).lower()
+        
         if gotten_subject == subject:
             if i == 0:
                 testing_score += 1
@@ -135,7 +135,7 @@ def testing_analysis(closest_documents, subject, temp_file_names, temp_data):
             
             testing_score += closest_documents[i][1] # The similarity score
     
-    debug.log("Failed to find subject: " + subject)
+    debug.log("Failed to find subject: |" + subject + "|")
 
 def analyze_results(closest_documents):
     # Print the results of the search
@@ -313,34 +313,30 @@ def run():
         debug.log("Adding new documents")
         gm.add_new_documents(document_folder, file_names, word_map, word_list, matrix, save_files_folder)
     
+    is_k = s_k_inverse(s_k)
     if testing:
         subjects = gm.get_subjects(data_limit)
         temp_file_names, temp_data = gm.get_data(document_folder, data_limit)
         
-        obj = time.gmtime(0)  
-        epoch = time.asctime(obj)  
-        print("epoch is:", epoch)
-        timeBuilding = 0
-        timeMultiplying = 0
-        timeFinding = 0
-        timeAnalyzing = 0
         i = -1
         print("Testing")
         for subject in subjects:
             i+=1
+            subject = subject.lower()
             debug.progress(i, len(subjects), without_debug=True)
             q = build_query_vector(subject, word_map, word_list)
-            q_altered = np.dot(np.dot(q.T, u_k), s_k_inverse(s_k))
+            q_altered = np.dot(np.dot(q.T, u_k), is_k)
             closest_documents = find_closest_documents(q_altered, v_k, file_names)
             testing_analysis(closest_documents, subject, temp_file_names, temp_data)
         print("Score: " + str(testing_score))
     
     while not testing:
-        prompt = input("\033[92mEnter a prompt\033[0m (q/quit/exit to quit): ")
+        prompt = input("\033[92mEnter a prompt\033[0m (q/quit/exit to quit): ").lower().strip()
         if prompt == "q" or prompt == "quit" or prompt == "exit":
             break
         q = build_query_vector(prompt, word_map, word_list)
-        q_altered = np.dot(np.dot(q.T, u_k), s_k_inverse(s_k))
+        q_altered = np.dot(np.dot(q.T, u_k), is_k)
+        matrix_to_file(q_altered, "query_vector.txt")
         closest_documents = find_closest_documents(q_altered, v_k, file_names)
         analyze_results(closest_documents)
 

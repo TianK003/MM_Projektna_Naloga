@@ -4,6 +4,7 @@ import os
 import debug
 from sklearn.datasets import fetch_20newsgroups
 import sys
+import re
 
 matrix = None
 testing = False
@@ -119,6 +120,11 @@ def get_data(folder, data_limit):
     return titles, data
 
 def create_frequency_matrix(data): # data is a list of strings. Those strings are the content of the documents
+    
+    for i in range(len(data)):
+        data[i] = data[i].lower()
+        data[i] = re.sub('[\W_]+', ' ', data[i])
+    
     debug.log("Creating frequency matrix")
     column_count = len(data)
     word_set = set() # Set of all words
