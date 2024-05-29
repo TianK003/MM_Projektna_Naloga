@@ -11,8 +11,8 @@ def set_debug_level(level):
     global debug_level
     debug_level = level
 
-def progress(current, total):
-    if debug_level == 0:
+def progress(current, total, without_debug=False):
+    if debug_level == 0 and not without_debug:
         return
     
     if current % int(total/100) != 0:

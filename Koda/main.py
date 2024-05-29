@@ -8,6 +8,7 @@ from sklearn.utils.extmath import randomized_svd
 import argparse
 import os
 import shutil
+import time
 
 # NOTES for later:
 # Matrix of words: Every document is a column, every word is a row
@@ -30,6 +31,9 @@ word_list_file = "word_list.npy"
 matrix_file = "matrix.npy"
 recompute = False
 add_new_documents = False
+testing = False
+
+testing_score = 0 # For each correct document +1, for each document that was close but not correct + similarity score
 
 
 def matrix_to_file(matrix, file_name):
@@ -75,6 +79,7 @@ def svd(matrix, k, files_saved):
 
 def build_query_vector(prompt, word_map, word_list):
     # Create a query vector from the prompt
+    # debug.log("Building query vector")
     query_vector = np.zeros(len(word_list))
     words = prompt.split()
     for word in words:
@@ -99,7 +104,8 @@ def find_closest_documents(q_altered, v_k, file_names):
     # Find the closest documents to the query vector
     # q_altered is the query vector altered by the SVD
     # v_k is the V matrix from the SVD
-    debug.log("Vk shape: " + str(v_k.shape))
+    # debug.log("Finding closest documents")
+
     closest_documents = []
     for i in range(v_k.shape[1]):
         v = v_k[:, i]
@@ -112,6 +118,24 @@ def find_closest_documents(q_altered, v_k, file_names):
     closest_document_names = sorted(closest_document_names, key=lambda x: x[1])[::-1]
     
     return closest_document_names
+
+def testing_analysis(closest_documents, subject, temp_file_names, temp_data):
+    global testing_score
+    # debug.log("Testing analysis")
+    for i in range(len(closest_documents)):
+        if i > 10:
+            break
+        index = np.nonzero(np.array(temp_file_names) == closest_documents[i][0])[0][0]
+        current_data = temp_data[index]
+        gotten_subject = gm.get_subject_from_document(current_data)
+        if gotten_subject == subject:
+            if i == 0:
+                testing_score += 1
+                return
+            
+            testing_score += closest_documents[i][1] # The similarity score
+    
+    debug.log("Failed to find subject: " + subject)
 
 def analyze_results(closest_documents):
     # Print the results of the search
@@ -163,6 +187,7 @@ def setup_parser():
     global recompute
     global data_limit
     global add_new_documents
+    global testing
     parser = argparse.ArgumentParser(description='Find the closest document to a prompt')
     
     parser.add_argument('--folder', type=str, help='The folder containing the documents. Default is "' + document_folder + '"', default=document_folder)
@@ -174,12 +199,15 @@ def setup_parser():
     parser.add_argument('--compute', help='Compute all files again.', action='store_true')
     parser.add_argument('-l', '--limit', type=int, help='The max number of documents to use. Default is ' + str(data_limit) + '.', default=data_limit)
     parser.add_argument('-a', '--add', help='Add all new documents to the database.', action='store_true')
+    parser.add_argument('-t', '--test', help='Run the test suite. Always uses online data. Generates new tables.', action='store_true')
     args = parser.parse_args()
     
-    
-    if args.online:
+    is_online = args.online
+    if args.test:
+        is_online = True
+    if is_online:
         document_folder = ""
-    if args.folder and not args.online:
+    if args.folder and not is_online:
         document_folder = args.folder
     if args.k:
         k = args.k
@@ -198,20 +226,24 @@ def setup_parser():
         data_limit = args.limit
     if args.add:
         add_new_documents = True
+    if args.test:
+        testing = True
     
     save_files_folder += mode + "_"
     save_files_folder += str(data_limit) + "_"
-    if args.online:
+    if is_online:
         save_files_folder += "online"
     else:
         save_files_folder += document_folder
+    if args.test:
+        save_files_folder += "_test"
     
     
     debug.log("Folder: " + document_folder)
     debug.log("K: " + str(k))
     debug.log("Cosine: " + str(cosinus_threadhold))
     debug.log("Mode: " + args.mode)
-    debug.log("Online: " + str(args.online))
+    debug.log("Online: " + str(is_online))
 
 def check_saved():
     global files_saved
@@ -251,6 +283,7 @@ def check_saved():
 def run():
     global k
     global document_folder
+    global testing
     
     files_saved = check_saved()
     file_names, word_map, word_list, matrix = None, None, None, None
@@ -280,8 +313,29 @@ def run():
         debug.log("Adding new documents")
         gm.add_new_documents(document_folder, file_names, word_map, word_list, matrix, save_files_folder)
     
+    if testing:
+        subjects = gm.get_subjects(data_limit)
+        temp_file_names, temp_data = gm.get_data(document_folder, data_limit)
+        
+        obj = time.gmtime(0)  
+        epoch = time.asctime(obj)  
+        print("epoch is:", epoch)
+        timeBuilding = 0
+        timeMultiplying = 0
+        timeFinding = 0
+        timeAnalyzing = 0
+        i = -1
+        print("Testing")
+        for subject in subjects:
+            i+=1
+            debug.progress(i, len(subjects), without_debug=True)
+            q = build_query_vector(subject, word_map, word_list)
+            q_altered = np.dot(np.dot(q.T, u_k), s_k_inverse(s_k))
+            closest_documents = find_closest_documents(q_altered, v_k, file_names)
+            testing_analysis(closest_documents, subject, temp_file_names, temp_data)
+        print("Score: " + str(testing_score))
     
-    while True:
+    while not testing:
         prompt = input("\033[92mEnter a prompt\033[0m (q/quit/exit to quit): ")
         if prompt == "q" or prompt == "quit" or prompt == "exit":
             break

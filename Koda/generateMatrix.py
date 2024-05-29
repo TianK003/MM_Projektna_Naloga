@@ -6,6 +6,8 @@ from sklearn.datasets import fetch_20newsgroups
 import sys
 
 matrix = None
+testing = False
+subjects = []
 
 def add_new_document(A, U, S, V, a_new):
     """
@@ -49,6 +51,43 @@ def add_new_document(A, U, S, V, a_new):
 
 def add_new_documents():
     pass
+
+def get_subject_from_document(data):
+    split = data.split("\n")
+    for j in range(0, len(split)):
+        split_line = split[j].split()
+        if len(split_line) == 0:
+            print(data)
+            print("No subject found - empty line")
+            exit(0)
+        if split_line[0] == "Subject:":
+            subject_string = split[j].split("Subject:")[1].split("Re:")[-1].strip()
+            return subject_string
+    else:
+        print(data)
+        print("No subject found - no lines")
+        print("Data:" + str(i))
+        exit(0)
+
+def get_subjects(data_limit):
+    data = get_data("", data_limit)[1]
+    
+    debug.log("Getting subjects")
+    for i in range(len(data)):
+        subject_string = get_subject_from_document(data[i])
+        subjects.append(subject_string)
+    
+    return subjects
+
+def alter_data_for_testing(data):
+    global testing
+    global subjects
+    debug.log("Altering data for testing")
+    
+    for i in range(len(data)):
+        split = data[i].split("Lines:")
+        for j in range(1, len(split)):
+            data.append(split[j])
 
 def read_docx_file(filename):
     doc = docx.Document(filename)
