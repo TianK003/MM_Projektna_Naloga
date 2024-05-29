@@ -1,4 +1,6 @@
 \documentclass{beamer}
+\usetheme{Antibes}  % This sets the frame title style to Antibes
+\usecolortheme{beetle}  % This sets the color theme to Beetle
 \usepackage{amsmath}
 \usepackage{tikz}
 \usepackage{graphicx}
@@ -41,7 +43,7 @@
             a_{ij} = L_{ij} \cdot G_i
         \]
         \[
-            L_{ij} = log(1 + f_{ij}), \quad G_i = 1 - \sum_{j} \frac{p_{ij} log(p_{ij})}{log n}, \quad p_{ij} = \frac{f_{ij}}{g_{f_i}}
+            L_{ij} = \log (1 + f_{ij}), \quad G_i = 1 - \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n}, \quad p_{ij} = \frac{f_{ij}}{g_{f_i}}
         \]
     \end{center}
 \end{frame}
