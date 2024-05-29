@@ -5,6 +5,16 @@
 \usepackage{tikz}
 \usepackage{graphicx}
 \usepackage{caption}
+\usepackage{colortbl} % Needed for \columncolor and \rowcolor
+
+\definecolor{myPurple}{RGB}{150, 0, 150} % Define a custom purple color
+\definecolor{myLightBlue}{rgb}{0.82, 0.92, 1.00}
+\definecolor{myGray}{rgb}{0.85, 0.85, 0.85}
+\definecolor{seahorsePurple}{RGB}{214, 214, 240}
+
+\setbeamertemplate{itemize item}{\color{myPurple}\textbullet} % Change bullet color and shape
+\setbeamertemplate{itemize subitem}{\color{myPurple}\textbullet} % Change subitem as well
+\setbeamertemplate{itemize subsubitem}{\color{myPurple}\textbullet} % Change subsubitem as well
 
 \title{Search within a collection of documents}
 \subtitle{Mathematical Modelling}
@@ -57,10 +67,32 @@
 
 \begin{frame}{Results}
     \begin{itemize}
-        \item NE PUSTIT PRAZNO
-        \item 
+        \item Unoptimized Solution:
     \end{itemize}
+    \centering % This centers the table on the slide
+    \resizebox{\textwidth}{!}{%
+        \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \rowcolor{seahorsePurple}
+        & \textbf{0.10} & \textbf{0.20} & \textbf{0.30} & \textbf{0.40} & \textbf{0.50} & \textbf{0.60} & \textbf{0.70} & \textbf{0.80} & \textbf{0.90} \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{10}   & 642.0 & 620.0 & 583.8 & 539.1 & 478.3 & 394.5 & 294.7 & 163.4 & 55.38 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{50}    & 395.5 & 349.9 & 282.6 & 221.0 & 170.1 & 116.9 & 93.88 & 73.63 & 30    \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{100}   & 436.0 & 397.2 & 322.9 & 251.9 & 185.2 & 122.6 & 100.7 & 70    & 22    \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{250}   & 545.4 & 513.8 & 451.6 & 360.4 & 257.2 & 193.3 & 127.7 & 83    & 26    \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{500}   & 649.4 & 626.7 & 571.4 & 471.2 & 354.9 & 240.6 & 156   & 79    & 22    \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{750}   & 649.4 & 626.7 & 571.4 & 471.2 & 354.9 & 240.6 & 156   & 79    & 22    \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{1000}  & 649.4 & 626.7 & 571.4 & 471.2 & 354.9 & 240.6 & 156   & 79    & 22    \\ \hline
+        \end{tabular}
+    }
 \end{frame}
+
+\begin{frame}{Results}
+    \begin{itemize}
+        \item Optimized Solution:
+    \end{itemize}
+    
+\end{frame}
+
 
 \begin{frame}{Discussion}
     \begin{itemize}
