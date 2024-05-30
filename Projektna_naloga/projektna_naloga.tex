@@ -125,12 +125,110 @@ Looking further to improve our search methods, a key challenge lies in managing 
 
 
 \subsection{Additional Improvements}
+So far, our approach, while efficient, still requires recomputing the Singular Value Decomposition (SVD) each time a new document or word is added. To resolve this issue, we have implemented an update mechanism that integrates new data into the existing SVD structure without the need for full recomputation. This enhancement significantly improves the scalability and efficiency of our system, enabling more effective handling of dynamic datasets.
 
+\subsubsection{Adding New Documents}
+When a new document is added, the term-document matrix $A$ is extended by adding a new column. This column vector, denoted as $a_{\text{new}}$, contains the term frequencies for the new document. The SVD components are then updated as follows:
+\begin{itemize}
+    \item Compute the projection of $a_{\text{new}}$ onto the existing left singular vectors $U_k$: 
+    \[
+    p = U_k^T a_{\text{new}}
+    \]
+    \item Compute the residual vector $r$, which is the component of $a_{\text{new}}$ orthogonal to $U_k$: 
+    \[
+    r = a_{\text{new}} - U_k p
+    \]
+    \item If $r$ is approximately zero, $a_{\text{new}}$ lies in the subspace spanned by $U_k$. Otherwise, normalize it to obtain a new singular vector component: 
+    \[
+    r = \frac{r}{\|r\|}
+    \]
+\end{itemize}
+The augmented matrices are then formed to incorporate these updates into the existing SVD structure:
+\begin{itemize}
+    \item Form the augmented left singular vectors $U_k$:
+    \[
+    \tilde{U}_k = [U_k \quad r]
+    \]
+    \item Form the augmented singular values $\Sigma_k$:
+    \[
+    \tilde{\Sigma}_k = \begin{bmatrix}
+    \Sigma_k & p \\
+    0 & \|r\|
+    \end{bmatrix}
+    \]
+    \item Update the right singular vectors $V_k$ to include the new document:
+    \[
+    \tilde{V}_k = \begin{bmatrix}
+    V_k & 0 \\
+    0 & 1
+    \end{bmatrix}
+    \]
+\end{itemize}
+These methods ensure that our SVD representation remains accurate and scalable as new data is incorporated.
+
+\subsubsection{Adding New Words}
+Similarly, introducing new words involves extending the term-document matrix $A$ by adding a new row for $a_{\text{new}}$. The update procedure includes:
+\begin{itemize}
+    \item Projecting $a_{\text{new}}$ onto the existing right singular vectors $V_k$: 
+    \[
+    p = a_{\text{new}} V_k
+    \]
+    \item Computing the residual vector $r$, orthogonal to $V_k$: 
+    \[
+    r = a_{\text{new}} - p V_k^T
+    \]
+    \item If $r$ is approximately zero, $a_{\text{new}}$ lies in the subspace spanned by $V_k$. Otherwise, normalize it to obtain a new singular vector component: 
+    \[
+    r = \frac{r}{\|r\|}
+    \]
+\end{itemize}
+The augmented matrices are then formed to incorporate these updates into the existing SVD structure:
+\begin{itemize}
+    \item Update the right singular vectors $V_k$:
+    \[
+    \tilde{V}_k = [V_k \quad r]
+    \]
+    \item Update the singular values $\Sigma_k$:
+    \[
+    \tilde{\Sigma}_k = \begin{bmatrix}
+    \Sigma_k & 0 \\
+    p^T & \|r\|
+    \end{bmatrix}
+    \]
+    \item Update the left singular vectors $U_k$ to include the new word:
+    \[
+    \tilde{U}_k = \begin{bmatrix}
+    U_k & 0 \\
+    0 & 1
+    \end{bmatrix}
+    \]
+\end{itemize}
+These methods ensure that our SVD representation remains accurate and scalable as new data is incorporated.
 
 \newpage
 \section{Results}
 
+\subsection{Testing Methodology}
+The testing methodology for our text processing system is designed to evaluate the accuracy and efficiency of document retrieval capabilities. This evaluation is critical for ensuring that the system performs optimally under various operational conditions and with different datasets. The testing process includes the following key steps:
 
+\begin{enumerate}
+    \item \textbf{Relevance and Accuracy Assessment:} For each query, the system retrieves documents based on cosine similarity measures, comparing the system’s output against expected results. The accuracy is quantified by how closely the retrieved documents match the predefined relevant documents or subjects.
+
+    \item \textbf{Performance Scoring:} The system assigns scores based on the relevance of the retrieved documents. Full points are awarded for exact matches, while partial scores are given for documents that are close but not exact, based on their similarity metrics.
+
+    \item \textbf{Dynamic Data Integration Tests:} \textcolor{red}{abomo to idk ?} system is tested for its ability to dynamically update the term-document matrix and SVD components when new documents are added to the corpus. This ensures that the system remains accurate and efficient as the dataset grows.
+\end{enumerate}
+
+\noindent This structured testing strategy ensures that our document retrieval system is thoroughly evaluated for accuracy, providing confidence in its capability to handle real-world applications effectively.
+
+
+\subsection{Non-optimized Solution}
+
+
+
+\subsection{Optimized Solution}
+
+\subsection{Additional Improvements}
 
 \newpage
 \subsection{Discussion}

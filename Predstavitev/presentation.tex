@@ -1,8 +1,20 @@
 \documentclass{beamer}
+\usetheme{Rochester}
+\usecolortheme{seahorse}
 \usepackage{amsmath}
 \usepackage{tikz}
 \usepackage{graphicx}
 \usepackage{caption}
+\usepackage{colortbl} % Needed for \columncolor and \rowcolor
+
+\definecolor{myPurple}{RGB}{150, 0, 150} % Define a custom purple color
+\definecolor{myLightBlue}{rgb}{0.82, 0.92, 1.00}
+\definecolor{myGray}{rgb}{0.85, 0.85, 0.85}
+\definecolor{seahorsePurple}{RGB}{214, 214, 240}
+
+\setbeamertemplate{itemize item}{\color{myPurple}\textbullet} % Change bullet color and shape
+\setbeamertemplate{itemize subitem}{\color{myPurple}\textbullet} % Change subitem as well
+\setbeamertemplate{itemize subsubitem}{\color{myPurple}\textbullet} % Change subsubitem as well
 
 \title{Search within a collection of documents}
 \subtitle{Mathematical Modelling}
@@ -41,7 +53,7 @@
             a_{ij} = L_{ij} \cdot G_i
         \]
         \[
-            L_{ij} = log(1 + f_{ij}), \quad G_i = 1 - \sum_{j} \frac{p_{ij} log(p_{ij})}{log n}, \quad p_{ij} = \frac{f_{ij}}{g_{f_i}}
+            L_{ij} = \log (1 + f_{ij}), \quad G_i = 1 - \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n}, \quad p_{ij} = \frac{f_{ij}}{g_{f_i}}
         \]
     \end{center}
 \end{frame}
@@ -55,10 +67,49 @@
 
 \begin{frame}{Results}
     \begin{itemize}
-        \item NE PUSTIT PRAZNO
-        \item 
+        \item Unoptimized Solution:
     \end{itemize}
+    \centering % This centers the table on the slide
+    \resizebox{\textwidth}{!}{%
+        \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \rowcolor{seahorsePurple}
+        & \textbf{0.10} & \textbf{0.20} & \textbf{0.30} & \textbf{0.40} & \textbf{0.50} & \textbf{0.60} & \textbf{0.70} & \textbf{0.80} & \textbf{0.90} \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{10}   & 52.17 & 52.17 & 52.17 & 52.17 & 52.17 & 51.59 & 50.97 & 44.25 & 25.77 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{50}    & 182.6 & 182.6 & 182.6 & 177.4 & 157.5 & 115.1 & 93.88 & 73.63 & 30 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{100}   & 277.3 & 277.3 & 271.3 & 237.5 & 182.5 & 122.6 & 100.7 & 70 & 22 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{250}   & 469.2 & 468.2 & 436.3 & 355.4 & 255.8 & 191.9 & 127.7 & 83 & 26 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{500}   & 613.5 & 606.9 & 557.6 & 465.0 & 356.9 & 239.6 & 155 & 81 & 28 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{750}   & 668.4 & 660.4 & 618.1 & 526.5 & 389.5 & 281.7 & 168 & 100 & 26 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{1000}  & 641.9 & 627.2 & 580.6 & 486.4 & 385.2 & 295.6 & 213 & 119 & 37 \\ \hline
+        \end{tabular}
+    }
 \end{frame}
+
+
+\begin{frame}{Results}
+    \begin{itemize}
+        \item Optimized Solution:
+    \end{itemize}
+    \centering % This centers the table on the slide
+    \resizebox{\textwidth}{!}{%
+        \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \rowcolor{seahorsePurple}
+        & \textbf{0.10} & \textbf{0.20} & \textbf{0.30} & \textbf{0.40} & \textbf{0.50} & \textbf{0.60} & \textbf{0.70} & \textbf{0.80} & \textbf{0.90} \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{10}   & 71.18 & 71.18 & 71.18 & 71.18 & 70.72 & 68.47 & 68.47 & 63.06 & 44.12 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{50}    & 300.6 & 300.6 & 300.0 & 298.9 & 286.6 & 259.3 & 198.7 & 128.5 & 57.95 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{100}   & 442.1 & 442.1 & 441.2 & 417.0 & 354.4 & 273.8 & 180.7 & 116.5 & 58 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{250}   & 637.2 & 636.5 & 622.4 & 547.8 & 426.8 & 304.0 & 213.5 & 128.8 & 61 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{500}   & 726.5 & 722.5 & 674.8 & 576.7 & 435.6 & 325.3 & 201.0 & 102 & 65 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{750}   & 753.3 & 741.5 & 685.0 & 589.2 & 459.6 & 322.3 & 219 & 123 & 56 \\ \hline
+        \cellcolor{seahorsePurple}k=\textbf{1000}  & 673.5 & 657.3 & 604.0 & 499.4 & 409.7 & 316.6 & 232 & 141 & 70 \\ \hline
+        \end{tabular}
+    }
+\end{frame}
+
+
+
 
 \begin{frame}{Discussion}
     \begin{itemize}
