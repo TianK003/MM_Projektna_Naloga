@@ -6,9 +6,15 @@ from sklearn.datasets import fetch_20newsgroups
 import sys
 import re
 
-matrix = None
 testing = False
 subjects = []
+
+def correct_data_for_testing(data):
+    for i in range(len(data)):
+        data[i] = data[i].lower()
+        data[i] = re.sub('[\W_]+', ' ', data[i])
+    
+    return data
 
 def add_new_document(A, U, S, V, a_new):
     """
@@ -24,6 +30,8 @@ def add_new_document(A, U, S, V, a_new):
     Returns:
     tuple: Updated (U, S, V) matrices.
     """
+    
+    debug.log("Adding new document")
     # Compute the projection of a_new on the existing left singular vectors U
     p = np.dot(U.T, a_new)
     
@@ -50,8 +58,28 @@ def add_new_document(A, U, S, V, a_new):
     
     return U_k, S_k, V_k
 
-def add_new_documents():
+def add_new_documents(prev_file_names, folder):
+    
+    
+    for i in range(len(new_data)):
+        a
+    
     pass
+
+def get_new_data(folder, prev_file_names, data_limit):
+    all_file_names, all_data = get_data(folder, data_limit)
+    
+    new_data = []
+    new_file_names = []
+    
+    for i in range(len(all_file_names)):
+        if all_file_names[i] not in prev_file_names:
+            new_data.append(all_data[i])
+            new_file_names.append(all_file_names[i])
+    
+    correct_data_for_testing(new_data)
+    
+    return new_file_names, new_data
 
 def get_subject_from_document(data):
     split = data.split("\n")
@@ -107,7 +135,10 @@ def get_data(folder, data_limit):
         if data_limit>newsgroups_train.filenames.shape[0]:
             debug.log("No data limit")
             data_limit = newsgroups_train.filenames.shape[0]
-        return newsgroups_train.filenames[:data_limit], newsgroups_train.data[:data_limit]
+        file_names = newsgroups_train.filenames[:data_limit]
+        # for i in range(len(file_names)):
+        #     file_names[i] = get_subject_from_document(newsgroups_train.data[i])
+        return file_names, newsgroups_train.data[:data_limit]
     
     file_names = os.listdir(folder)
     titles = []
@@ -121,9 +152,7 @@ def get_data(folder, data_limit):
 
 def create_frequency_matrix(data): # data is a list of strings. Those strings are the content of the documents
     
-    for i in range(len(data)):
-        data[i] = data[i].lower()
-        data[i] = re.sub('[\W_]+', ' ', data[i])
+    correct_data_for_testing(data)
     
     debug.log("Creating frequency matrix")
     column_count = len(data)

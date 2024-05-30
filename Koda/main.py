@@ -42,6 +42,24 @@ def matrix_to_file(matrix, file_name):
     f.write(np.array2string(matrix, threshold=np.inf, max_line_width=np.inf))
     f.close()
 
+def format_print_text(text, i):
+    print_text = text
+    max_size = 60
+    terminal_size = os.get_terminal_size().columns-13
+    if terminal_size > max_size:
+        terminal_size = max_size
+    if len(print_text) > terminal_size:
+        print_text = print_text[:terminal_size-3] + "..."
+    if len(print_text) < terminal_size:
+        if (len(print_text) + 1)%2 == 0:
+            print_text += " "
+        space_symbol = " ."
+        if i%2 == 0:
+            space_symbol = "  "
+        print_text += space_symbol*int((terminal_size-len(print_text))/2)
+    
+    return print_text
+
 def compute_svd(matrix, k):
     debug.log("Performing SVD")
     U, s, V = randomized_svd(matrix, n_components=k)
@@ -124,6 +142,8 @@ def testing_analysis(closest_documents, subject, temp_file_names, temp_data):
     global testing_score
     # debug.log("Testing analysis")
     for i in range(len(closest_documents)):
+        if i >= 10:
+            break
         index = np.nonzero(np.array(temp_file_names) == closest_documents[i][0])[0][0]
         current_data = temp_data[index]
         gotten_subject = gm.get_subject_from_document(current_data).lower()
@@ -134,6 +154,7 @@ def testing_analysis(closest_documents, subject, temp_file_names, temp_data):
                 return
             
             testing_score += closest_documents[i][1] # The similarity score
+            return
     
     debug.log("Failed to find subject: |" + subject + "|")
 
@@ -149,8 +170,9 @@ def analyze_results(closest_documents):
         print("\033[94mClosest documents: \033[0m")
         i = 0
         for document in closest_documents:
-            print("\033[95m" + str(i) + ": ", end="\033[0m")
-            print(document[0] + " " + str(document[1]))
+            print(f"\033[95m%4s: " % str(i),  end="\033[0m")
+            print_text = format_print_text(document[0], i)
+            print(f"%-s %.4f"% (print_text, document[1]))
             i+=1
         
         selected_document = input("\033[92mEnter the number of the document to view\033[0m (n/new for new prompt): ")
@@ -192,9 +214,9 @@ def setup_parser():
     
     parser.add_argument('--folder', type=str, help='The folder containing the documents. Default is "' + document_folder + '"', default=document_folder)
     parser.add_argument('-o', '--online', help='Whether to use the online library of data.', action='store_true')
-    parser.add_argument('--mode', type=str, help='The mode to run in. Options are ' + str(modes) + '. Default is ' + modes[0] + '.', default=modes[0])
+    parser.add_argument('-m', '--mode', type=str, help='The mode to run in. Options are ' + str(modes) + '. Default is ' + modes[0] + '.', default=modes[0])
     parser.add_argument('-k', '--k', type=int, help='The number of singular values to use. Default is ' + str(k) + '.', default=k)
-    parser.add_argument('--cosine', type=float, help='The cosine similarity threshold. Default is ' + str(cosinus_threadhold) + '.', default=cosinus_threadhold)
+    parser.add_argument('-c', '--cosine', type=float, help='The cosine similarity threshold. Default is ' + str(cosinus_threadhold) + '.', default=cosinus_threadhold)
     parser.add_argument('-d', '--debug', help='Print debug information.', action='store_true')
     parser.add_argument('--compute', help='Compute all files again.', action='store_true')
     parser.add_argument('-l', '--limit', type=int, help='The max number of documents to use. Default is ' + str(data_limit) + '.', default=data_limit)
@@ -228,6 +250,7 @@ def setup_parser():
         add_new_documents = True
     if args.test:
         testing = True
+        
     
     save_files_folder += mode + "_"
     save_files_folder += str(data_limit) + "_"
@@ -308,12 +331,20 @@ def run():
         matrix = np.load(os.path.join(save_files_folder, matrix_file))
     
     u_k, s_k, v_k = svd(matrix, k, files_saved)
+    is_k = s_k_inverse(s_k)
     
     if add_new_documents:
         debug.log("Adding new documents")
-        gm.add_new_documents(document_folder, file_names, word_map, word_list, matrix, save_files_folder)
-    
-    is_k = s_k_inverse(s_k)
+        new_file_names, new_data = gm.get_new_data(document_folder, file_names, data_limit)
+        for i in range(len(new_file_names)):
+            debug.log("Adding new document: " + new_file_names[i])
+            new_document_vector = build_query_vector(new_data[i], word_map, word_list)
+            altered_document_vector = np.dot(np.dot(new_document_vector.T, u_k), is_k)
+            matrix_to_file(altered_document_vector, "new_document_vector.txt")
+            matrix_to_file(v_k, "v_k.txt")
+            v_k = np.append(v_k, altered_document_vector, axis=1)
+            file_names.append(new_file_names[i])
+
     if testing:
         subjects = gm.get_subjects(data_limit)
         temp_file_names, temp_data = gm.get_data(document_folder, data_limit)
@@ -329,6 +360,7 @@ def run():
             closest_documents = find_closest_documents(q_altered, v_k, file_names)
             testing_analysis(closest_documents, subject, temp_file_names, temp_data)
         print("Score: " + str(testing_score))
+        # print(testing_score)
     
     while not testing:
         prompt = input("\033[92mEnter a prompt\033[0m (q/quit/exit to quit): ").lower().strip()

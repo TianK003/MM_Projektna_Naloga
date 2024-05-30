@@ -15,8 +15,9 @@ def progress(current, total, without_debug=False):
     if debug_level == 0 and not without_debug:
         return
     
-    if current % int(total/100) != 0:
-        return
+    if total > 100:
+        if current % int(total/100) != 0:
+            return
     
     sys.stdout.write('\r')
     percentage = 100 * current / total
