@@ -337,13 +337,34 @@ def run():
         debug.log("Adding new documents")
         new_file_names, new_data = gm.get_new_data(document_folder, file_names, data_limit)
         for i in range(len(new_file_names)):
+            # Add new document
             debug.log("Adding new document: " + new_file_names[i])
             new_document_vector = build_query_vector(new_data[i], word_map, word_list)
             altered_document_vector = np.dot(np.dot(new_document_vector.T, u_k), is_k)
-            matrix_to_file(altered_document_vector, "new_document_vector.txt")
-            matrix_to_file(v_k, "v_k.txt")
-            v_k = np.append(v_k, altered_document_vector, axis=1)
+            v_k = np.hstack((v_k, np.zeros((v_k.shape[0], 1), dtype=v_k.dtype)))
+            v_k[:,-1] = altered_document_vector
             file_names.append(new_file_names[i])
+            
+            # Add new word???
+            data_split = new_data[i].split()
+            new_words = set()
+            for word in data_split:
+                if word not in word_map:
+                    new_words.add(word)
+            
+            for word in new_words:
+                word_map[word] = len(word_list)
+                word_list.append(word)
+                count = 0
+                for j in range(len(data_split)):
+                    if word == data_split[j]:
+                        count += 1
+                word_query_vector = np.zeros(len(file_names))
+                word_query_vector[-1] = count
+                altered_word_query_vector = np.dot(np.dot(word_query_vector, v_k.T), s_k)
+                u_k = np.vstack((u_k, np.zeros((1, u_k.shape[1]), dtype=u_k.dtype)))
+                u_k[-1, :] = altered_word_query_vector
+            
 
     if testing:
         subjects = gm.get_subjects(data_limit)
@@ -367,8 +388,9 @@ def run():
         if prompt == "q" or prompt == "quit" or prompt == "exit":
             break
         q = build_query_vector(prompt, word_map, word_list)
+        print(q.shape)
+        print(u_k.shape)
         q_altered = np.dot(np.dot(q.T, u_k), is_k)
-        matrix_to_file(q_altered, "query_vector.txt")
         closest_documents = find_closest_documents(q_altered, v_k, file_names)
         analyze_results(closest_documents)
 
