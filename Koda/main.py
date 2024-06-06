@@ -146,6 +146,9 @@ def testing_analysis(closest_documents, subject, temp_file_names, temp_data):
     for i in range(len(closest_documents)):
         if i >= 10:
             break
+        
+        # Since we only have the index of the document in the V matrix, we need to find the corresponding title and data. So we search for the index in the list of titles
+        # closest_documents[i][0] is the title of the document, so we find the index of the title in the list of titles
         index = np.nonzero(np.array(temp_file_names) == closest_documents[i][0])[0][0]
         current_data = temp_data[index]
         gotten_subject = gm.get_subject_from_document(current_data).lower()
@@ -223,7 +226,7 @@ def add_file_words(u_k, s_k, v_k, file_names, word_map, word_list, new_data):
         word_map[word] = len(word_list)
         word_list.append(word)
         count = 0
-        for j in range(len(data_split)):
+        for j in range(len(data_split)): # Check how many times the new word appears in the new document data
             if word == data_split[j]:
                 count += 1
         word_query_vector = np.zeros(len(file_names))
@@ -386,8 +389,8 @@ def run():
             
 
     if testing: # If we are running the test suite. Here we remove the file information from the training data, then feed the file "subjects" as the search prompt. We only ever do this on online files
-        subjects = gm.get_subjects(data_limit)
-        temp_file_names, temp_data = gm.get_data(document_folder, data_limit)
+        subjects = gm.get_subjects(data_limit) # Get the subjects of the documents
+        temp_file_names, temp_data = gm.get_data(document_folder, data_limit) # Get the titles and data of the documents
         
         i = -1
         print("Testing")
