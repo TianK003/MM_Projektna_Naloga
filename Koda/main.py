@@ -30,7 +30,7 @@ word_map_file = "word_map.npy"
 word_list_file = "word_list.npy"
 matrix_file = "matrix.npy"
 recompute = False
-add_new_documents = False
+should_add_new_documents = False
 testing = False
 
 testing_score = 0 # For each correct document +1, for each document that was close but not correct + similarity score
@@ -197,7 +197,51 @@ def analyze_results(closest_documents):
         print("-"*os.get_terminal_size().columns)
         print(temp_data[index])
         print("-"*os.get_terminal_size().columns)
+
+def add_new_file_name(u_k, is_k, v_k, file_names, word_map, word_list, new_file_name, new_data):
+    debug.log("Adding new document: " + new_file_name)
+    new_document_vector = build_query_vector(new_data, word_map, word_list)
+    altered_document_vector = np.dot(np.dot(new_document_vector.T, u_k), is_k)
+    v_k = np.hstack((v_k, np.zeros((v_k.shape[0], 1), dtype=v_k.dtype)))
+    v_k[:,-1] = altered_document_vector
+    file_names.append(new_file_name)
+    
+    return u_k, is_k, v_k, file_names
+
+def add_file_words(u_k, s_k, v_k, file_names, word_map, word_list, new_data):
+    data_split = new_data.split()
+    new_words = set()
+    for word in data_split:
+        if word not in word_map:
+            new_words.add(word)
+    
+    for word in new_words:
+        word_map[word] = len(word_list)
+        word_list.append(word)
+        count = 0
+        for j in range(len(data_split)):
+            if word == data_split[j]:
+                count += 1
+        word_query_vector = np.zeros(len(file_names))
+        word_query_vector[-1] = count
+        altered_word_query_vector = np.dot(np.dot(word_query_vector, v_k.T), s_k)
+        u_k = np.vstack((u_k, np.zeros((1, u_k.shape[1]), dtype=u_k.dtype)))
+        u_k[-1, :] = altered_word_query_vector
+    
+    return u_k, s_k, v_k, word_map, word_list
         
+def add_new_documents(u_k, s_k, v_k, file_names, word_map, word_list, data_limit):
+    debug.log("Adding new documents")
+    is_k = s_k_inverse(s_k)
+    new_file_names, new_data = gm.get_new_data(document_folder, file_names, data_limit)
+    for i in range(len(new_file_names)):
+        # Add new document
+        u_k, is_k, v_k, file_names = add_new_file_name(u_k, is_k, v_k, file_names, word_map, word_list, new_file_names[i], new_data[i])
+        
+        # Add new word???
+        u_k, s_k, v_k, word_map, word_list = add_file_words(u_k, s_k, v_k, file_names, word_map, word_list, new_data[i])
+    
+    return u_k, s_k, v_k, file_names, word_map, word_list
 
 def setup_parser():
     global document_folder
@@ -208,7 +252,7 @@ def setup_parser():
     global save_files_folder
     global recompute
     global data_limit
-    global add_new_documents
+    global should_add_new_documents
     global testing
     parser = argparse.ArgumentParser(description='Find the closest document to a prompt')
     
@@ -247,7 +291,7 @@ def setup_parser():
     if args.limit:
         data_limit = args.limit
     if args.add:
-        add_new_documents = True
+        should_add_new_documents = True
     if args.test:
         testing = True
         
@@ -333,37 +377,8 @@ def run():
     u_k, s_k, v_k = svd(matrix, k, files_saved)
     is_k = s_k_inverse(s_k)
     
-    if add_new_documents:
-        debug.log("Adding new documents")
-        new_file_names, new_data = gm.get_new_data(document_folder, file_names, data_limit)
-        for i in range(len(new_file_names)):
-            # Add new document
-            debug.log("Adding new document: " + new_file_names[i])
-            new_document_vector = build_query_vector(new_data[i], word_map, word_list)
-            altered_document_vector = np.dot(np.dot(new_document_vector.T, u_k), is_k)
-            v_k = np.hstack((v_k, np.zeros((v_k.shape[0], 1), dtype=v_k.dtype)))
-            v_k[:,-1] = altered_document_vector
-            file_names.append(new_file_names[i])
-            
-            # Add new word???
-            data_split = new_data[i].split()
-            new_words = set()
-            for word in data_split:
-                if word not in word_map:
-                    new_words.add(word)
-            
-            for word in new_words:
-                word_map[word] = len(word_list)
-                word_list.append(word)
-                count = 0
-                for j in range(len(data_split)):
-                    if word == data_split[j]:
-                        count += 1
-                word_query_vector = np.zeros(len(file_names))
-                word_query_vector[-1] = count
-                altered_word_query_vector = np.dot(np.dot(word_query_vector, v_k.T), s_k)
-                u_k = np.vstack((u_k, np.zeros((1, u_k.shape[1]), dtype=u_k.dtype)))
-                u_k[-1, :] = altered_word_query_vector
+    if should_add_new_documents:
+        u_k, s_k, v_k, file_names, word_map, word_list = add_new_documents(u_k, s_k, v_k, file_names, word_map, word_list, data_limit)
             
 
     if testing:
