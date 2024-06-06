@@ -10,6 +10,7 @@ testing = False
 subjects = []
 
 def correct_data_for_testing(data):
+    # Remove all non-alphabetic/number characters and make all characters lowercase
     for i in range(len(data)):
         data[i] = data[i].lower()
         data[i] = re.sub('[\W_]+', ' ', data[i])
@@ -33,6 +34,7 @@ def get_new_data(folder, prev_file_names, data_limit):
     return new_file_names, new_data
 
 def get_subject_from_document(data):
+    # When testing, we need the "subject" of the testing data. This is the string after "Subject:"
     split = data.split("\n")
     for j in range(0, len(split)):
         split_line = split[j].split()
@@ -79,9 +81,9 @@ def read_docx_file(filename):
 def read_file(filename):
     return read_docx_file(filename)
 
-def get_data(folder, data_limit):
+def get_data(folder, data_limit): # Get the data from the chosen files. If no folder is given, we assume that the online library data is wanted
     debug.log("Getting data")
-    if folder == "":
+    if folder == "": # Use the online files
         newsgroups_train = fetch_20newsgroups(subset='train')
         if data_limit>newsgroups_train.filenames.shape[0]:
             debug.log("No data limit")
@@ -91,6 +93,7 @@ def get_data(folder, data_limit):
         #     file_names[i] = get_subject_from_document(newsgroups_train.data[i])
         return file_names, newsgroups_train.data[:data_limit]
     
+    # Else, use the files in the given folder. This code can be expanded to include other file types
     file_names = os.listdir(folder)
     titles = []
     data = []
@@ -102,7 +105,7 @@ def get_data(folder, data_limit):
     return titles, data
 
 def create_frequency_matrix(data): # data is a list of strings. Those strings are the content of the documents
-    
+    # Here we create the matrix, which counts how many times each word appears in each document. Since we are only storing integers, we do not need the document titles, as the data is already stored in the same order as the titles
     correct_data_for_testing(data)
     
     debug.log("Creating frequency matrix")
@@ -147,6 +150,7 @@ def matrix_to_file(matrix, file_name):
     f.close()
 
 def create_complex_matrix(matrix):
+    # Here we transform our frequency matrix into the weighted version calculated with given formulas
     debug.log("Creating complex matrix")
     
     n = matrix.shape[1] # Number of documents

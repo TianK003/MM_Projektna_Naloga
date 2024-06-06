@@ -43,6 +43,7 @@ def matrix_to_file(matrix, file_name):
     f.close()
 
 def format_print_text(text, i):
+    # Make all lines the same length, no longer than the terminal window, and add dots to every second line
     print_text = text
     max_size = 60
     terminal_size = os.get_terminal_size().columns-13
@@ -60,16 +61,16 @@ def format_print_text(text, i):
     
     return print_text
 
-def compute_svd(matrix, k):
+def compute_svd(matrix, k): # We use the sklearn library to compute the SVD, as it's faster and more efficient for sparse matrices
     debug.log("Performing SVD")
     U, s, V = randomized_svd(matrix, n_components=k)
     debug.log("SVD performed")
     
     return U, s, V
 
-def svd(matrix, k, files_saved):
+def svd(matrix, k, files_saved): # Singular Value Decomposition
     
-    if files_saved:
+    if files_saved: # If we have the data saved, we can just load it
         debug.log("Loading SVD")
         U = np.load(os.path.join(save_files_folder, u_file))
         s = np.load(os.path.join(save_files_folder, s_file))
@@ -125,6 +126,7 @@ def find_closest_documents(q_altered, v_k, file_names):
     # v_k is the V matrix from the SVD
     # debug.log("Finding closest documents")
 
+    # Compare the search vector to all the document vectors based on cosine similarity
     closest_documents = []
     for i in range(v_k.shape[1]):
         v = v_k[:, i]
@@ -148,7 +150,7 @@ def testing_analysis(closest_documents, subject, temp_file_names, temp_data):
         current_data = temp_data[index]
         gotten_subject = gm.get_subject_from_document(current_data).lower()
         
-        if gotten_subject == subject:
+        if gotten_subject == subject: # If the "correct" document was within the top 10, add the similarity score. If it was the most similar, add 1. This testing method rewards overfitting, which might not be ideal, depending on the wanted result
             if i == 0:
                 testing_score += 1
                 return
@@ -199,6 +201,7 @@ def analyze_results(closest_documents):
         print("-"*os.get_terminal_size().columns)
 
 def add_new_file_name(u_k, is_k, v_k, file_names, word_map, word_list, new_file_name, new_data):
+    # Since we search for the closest document inside the V_k matrix, based on the altered query vector, we can transform a new document into a "query vector" and add it to the V_k matrix
     debug.log("Adding new document: " + new_file_name)
     new_document_vector = build_query_vector(new_data, word_map, word_list)
     altered_document_vector = np.dot(np.dot(new_document_vector.T, u_k), is_k)
@@ -209,13 +212,14 @@ def add_new_file_name(u_k, is_k, v_k, file_names, word_map, word_list, new_file_
     return u_k, is_k, v_k, file_names
 
 def add_file_words(u_k, s_k, v_k, file_names, word_map, word_list, new_data):
+    # Since documents are stored as columns in the V_k matrix, we can do an inverse transformation to add new words to the U_k matrix
     data_split = new_data.split()
     new_words = set()
     for word in data_split:
         if word not in word_map:
             new_words.add(word)
     
-    for word in new_words:
+    for word in new_words: # Add every new word we found in the data to U_k one by one
         word_map[word] = len(word_list)
         word_list.append(word)
         count = 0
@@ -295,7 +299,7 @@ def setup_parser():
     if args.test:
         testing = True
         
-    
+    # Due to many different configurations, we save the data in different folders based on the significant parameters
     save_files_folder += mode + "_"
     save_files_folder += str(data_limit) + "_"
     if is_online:
@@ -312,7 +316,7 @@ def setup_parser():
     debug.log("Mode: " + args.mode)
     debug.log("Online: " + str(is_online))
 
-def check_saved():
+def check_saved(): # Check if we have all the necessary precomputed data, to avoid recomputing
     global files_saved
     
     debug.log("Checking sava data")
@@ -334,11 +338,11 @@ def check_saved():
     if not os.path.exists(os.path.join(save_files_folder, matrix_file)):
         files_saved = False
     
-    if recompute:
+    if recompute: # If we want to force a recompute
         files_saved = False
     
     
-    if not files_saved:
+    if not files_saved: # If an of the files are missing, delete all the data and start over
         debug.log("Data not saved")
         if os.path.isdir(save_files_folder):
             shutil.rmtree(save_files_folder)
@@ -352,11 +356,11 @@ def run():
     global document_folder
     global testing
     
-    files_saved = check_saved()
+    files_saved = check_saved() 
     file_names, word_map, word_list, matrix = None, None, None, None
     
     debug.log("Getting data")
-    if not files_saved:
+    if not files_saved: # If we don't have the data saved, we need to compute it and save it
         optimize = False
         if mode == modes[1]:
             optimize = True
@@ -381,7 +385,7 @@ def run():
         u_k, s_k, v_k, file_names, word_map, word_list = add_new_documents(u_k, s_k, v_k, file_names, word_map, word_list, data_limit)
             
 
-    if testing:
+    if testing: # If we are running the test suite. Here we remove the file information from the training data, then feed the file "subjects" as the search prompt. We only ever do this on online files
         subjects = gm.get_subjects(data_limit)
         temp_file_names, temp_data = gm.get_data(document_folder, data_limit)
         
@@ -398,7 +402,7 @@ def run():
         print("Score: " + str(testing_score))
         # print(testing_score)
     
-    while not testing:
+    while not testing: # If we are not running the test suite, we can search for documents based on a prompt. The query vector is calculated based on given formulas
         prompt = input("\033[92mEnter a prompt\033[0m (q/quit/exit to quit): ").lower().strip()
         if prompt == "q" or prompt == "quit" or prompt == "exit":
             break
@@ -408,9 +412,9 @@ def run():
         analyze_results(closest_documents)
 
 def main():
-    setup_parser()
+    setup_parser() # Arguments are parsed here
     
-    run()
+    run() # The main function is run here
     
 if __name__ == "__main__":
     main()
