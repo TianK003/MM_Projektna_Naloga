@@ -388,8 +388,6 @@ def run():
         if prompt == "q" or prompt == "quit" or prompt == "exit":
             break
         q = build_query_vector(prompt, word_map, word_list)
-        print(q.shape)
-        print(u_k.shape)
         q_altered = np.dot(np.dot(q.T, u_k), is_k)
         closest_documents = find_closest_documents(q_altered, v_k, file_names)
         analyze_results(closest_documents)

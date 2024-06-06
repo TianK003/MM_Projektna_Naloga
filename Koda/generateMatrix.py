@@ -16,55 +16,6 @@ def correct_data_for_testing(data):
     
     return data
 
-def add_new_document(A, U, S, V, a_new):
-    """
-    Adds a new document to the existing term-document matrix and updates the SVD components.
-    
-    Parameters:
-    A (numpy.ndarray): Existing term-document matrix.
-    U (numpy.ndarray): Existing left singular vectors.
-    S (numpy.ndarray): Existing singular values (diagonal matrix).
-    V (numpy.ndarray): Existing right singular vectors.
-    a_new (numpy.ndarray): New document column vector.
-    
-    Returns:
-    tuple: Updated (U, S, V) matrices.
-    """
-    
-    debug.log("Adding new document")
-    # Compute the projection of a_new on the existing left singular vectors U
-    p = np.dot(U.T, a_new)
-    
-    # Compute the residual vector r
-    r = a_new - np.dot(U, p)
-    
-    # If r is approximately zero, a_new lies in the subspace spanned by U
-    if np.linalg.norm(r) < 1e-10:
-        # Form the augmented matrices
-        U_k = U
-        S_k = np.vstack([np.hstack([S, p.reshape(-1, 1)]), np.zeros((1, S.shape[1] + 1))])
-        V_k = np.vstack([np.hstack([V, np.zeros((V.shape[0], 1))]), np.zeros((1, V.shape[1] + 1))])
-        V_k[-1, -1] = 1
-    else:
-        # Normalize r to get the new singular vector component
-        r = r / np.linalg.norm(r)
-        
-        # Form the augmented matrices
-        U_k = np.hstack([U, r.reshape(-1, 1)])
-        S_k = np.vstack([np.hstack([S, p.reshape(-1, 1)]), np.zeros((1, S.shape[1] + 1))])
-        S_k[-1, -1] = np.linalg.norm(r)
-        V_k = np.vstack([np.hstack([V, np.zeros((V.shape[0], 1))]), np.zeros((1, V.shape[1] + 1))])
-        V_k[-1, -1] = 1
-    
-    return U_k, S_k, V_k
-
-def add_new_documents(prev_file_names, folder):
-    
-    
-    for i in range(len(new_data)):
-        a
-    
-    pass
 
 def get_new_data(folder, prev_file_names, data_limit):
     all_file_names, all_data = get_data(folder, data_limit)
