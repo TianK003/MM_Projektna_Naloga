@@ -19,6 +19,7 @@ def correct_data_for_testing(data):
 
 
 def get_new_data(folder, prev_file_names, data_limit):
+    debug.log("Getting new data")
     all_file_names, all_data = get_data(folder, data_limit)
     
     new_data = []
@@ -31,6 +32,7 @@ def get_new_data(folder, prev_file_names, data_limit):
     
     correct_data_for_testing(new_data)
     
+    debug.log("New data found: " + str(len(new_data)))
     return new_file_names, new_data
 
 def get_subject_from_document(data):
