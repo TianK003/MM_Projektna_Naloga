@@ -247,12 +247,26 @@ These methods ensure that our SVD representation remains accurate and scalable a
         \noindent
         A simple library that we used for reading DOCX files. This allowed us to easily test our implementation on a smaller local dataset.
     
-    \subsection{Nevem kaj kje sam pac da pokazm da se lahk preuredi}
+    \subsection{Nevem kaj kle sam pac da pokazm da se lahk preuredi}
 
     \newpage
     \subsection{Testing implementation}
-    Blab la
+    To ensure the accuracy and efficiency of our system, we need to conduct thorough testing, but when dealing with machine learning models, it is often tricky finding the right metrics to evaluate the model's performance. For this reason, we tested our implementation in several ways.
 
+        \bigskip
+        \noindent
+        \textbf{Automatic testing}
+        
+        \noindent
+        To achieve realively quick, reliable, and tangible results, we first implemented the following automatic testing idea:
+        All of our test data is structured in the form of e-mails. For this reason, every body of text comes with a "subject" line, that being a short description on what the e-mail is about. We can use this "subject" line as a query to our system. To ensure less bias, the subject line is removed from the testing data. The system then returns the most relevant e-mails based on the query. The results are then compared to the original "subject" line, and a score is given based on the relevance of the returned e-mails. If the correct e-mail is the most similar to our query, the score is 1, else if the correct e-mail is within the top 10 most similar e-mails, we award a score equaling the similarity of the correct e-mail, that being the one, where the subject matches the subject of the e-mail.
+
+        \bigskip
+        \noindent
+        \textbf{Manual testing}
+
+        \noindent
+        To further evaluate the system's performance, we conducted manual testing. This involved selecting a set of queries and manually assessing the relevance of the returned documents. This method allowed us to gain a deeper understanding of the system's performance and identify areas for improvement, as we have many different metrics to evaluate if a returned document is useful to us or not.
 
 \newpage
 \section{Results}
