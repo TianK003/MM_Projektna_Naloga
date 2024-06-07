@@ -206,6 +206,55 @@ The augmented matrices are then formed to incorporate these updates into the exi
 These methods ensure that our SVD representation remains accurate and scalable as new data is incorporated.
 
 \newpage
+\section{Implementation}
+    With our understanding of the problem and the proposed solutions, we now move to the implementation phase. This section details the technical aspects of our system, including the code structure, key functions, and the overall workflow.
+
+    \subsection{Tools}
+    The first step in implementing our system is to select the appropriate tools and programming languages. 
+    
+    We decided to use the programming language Python, due to its ease of use, versatility, and extensive collection of libraries. The following libraries are essential for our implementation:
+
+    \begin{itemize}
+        \item \textbf{NumPy}
+        \item \textbf{Scikit-learn}
+        \item \textbf{Python-Docx}
+    \end{itemize}
+        \bigskip
+        \noindent
+        \textbf{NumPy}
+
+        \noindent
+        The leading role in our implementation is played by NumPy, a fundamental package for numerical computing in Python. It provides support for large, multi-dimensional arrays and matrices, along with a collection of mathematical functions to operate on these arrays.
+
+        Since our system relies heavily on large matrix operations, NumPy is an essential library for handling the underlying data structures and computations.
+
+        \bigskip
+        \noindent
+        \textbf{Scikit-learn}
+
+        \noindent
+        Scikit-learn is a powerful machine learning library that provides simple and efficient tools for data mining and data analysis.
+        
+        We utilize Scikit-learn for its implementation of the Singular Value Decomposition (SVD) algorithm, which is a key component of our Latent Semantic Indexing (LSI) model. The SVD implementation we use is called "randomized\_svd", which is particularly well-suited for large sparse datasets, like the one we are working with. This implementation allows us to efficiently find a close approximation of the truncated SVD, which is crucial for our system's performance.
+
+        Another important feature of Scikit-learn that we leverage is their collection of machine learning datasets. The dataset we decided to use for testing and evaluation purposes is the "20 Newsgroups" dataset, which contains approximately 13,000 newsgroup documents across 20 different categories.
+
+
+        \bigskip
+        \noindent
+        \textbf{Python-Docx}
+
+        \noindent
+        A simple library that we used for reading DOCX files. This allowed us to easily test our implementation on a smaller local dataset.
+    
+    \subsection{Nevem kaj kje sam pac da pokazm da se lahk preuredi}
+
+    \newpage
+    \subsection{Testing implementation}
+    Blab la
+
+
+\newpage
 \section{Results}
 
 \subsection{Testing Methodology}
