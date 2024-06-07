@@ -43,6 +43,16 @@
       \end{figure}
 \end{frame}
 
+\begin{frame}{Solution}
+    %Image
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.9\textwidth]{../Slike/cosine.png}
+        \caption{Cosine similarity in k=2}
+        \label{fig:matrixA}
+    \end{figure}
+\end{frame}
+
 \begin{frame}{Optimization}
     \begin{itemize}
         \item Giving words different weights
@@ -61,13 +71,17 @@
 \begin{frame}{Additional Improvements to the Solution}
     \begin{itemize}
         \item Adding new documents without recalculation of SVD
+    \end{itemize}
+    \[\hat{q} = q^T U_k S_k^{-1}\]
+    \begin{itemize}
         \item Adding new words without recalculation of SVD
     \end{itemize}
+    \[\hat{q} = q^T V_k S_k\]
 \end{frame}
 
 \begin{frame}{Results}
     \begin{itemize}
-        \item Unoptimized Solution:
+        \item Frequency Solution:
     \end{itemize}
     \centering % This centers the table on the slide
     \resizebox{\textwidth}{!}{%
@@ -89,7 +103,7 @@
 
 \begin{frame}{Results}
     \begin{itemize}
-        \item Optimized Solution:
+        \item Weighted Solution:
     \end{itemize}
     \centering % This centers the table on the slide
     \resizebox{\textwidth}{!}{%
@@ -113,7 +127,8 @@
 
 \begin{frame}{Discussion}
     \begin{itemize}
-        \item NE PUSTIT PRAZNO
+        \item Weighted approx. 10\% better than Frequency solution
+        \item Adding without recomputation overfitted, but functional
     \end{itemize}
 \end{frame}
 
