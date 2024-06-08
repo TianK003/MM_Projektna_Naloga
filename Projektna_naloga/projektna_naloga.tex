@@ -7,6 +7,9 @@
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{multirow}
+\usepackage{colortbl}
 
 \definecolor{siva}{RGB}{235,235,235}
 \lstdefinestyle{Matlab-Pyglike}{
@@ -127,83 +130,23 @@ Looking further to improve our search methods, a key challenge lies in managing 
 \subsection{Additional Improvements}
 So far, our approach, while efficient, still requires recomputing the Singular Value Decomposition (SVD) each time a new document or word is added. To resolve this issue, we have implemented an update mechanism that integrates new data into the existing SVD structure without the need for full recomputation. This enhancement significantly improves the scalability and efficiency of our system, enabling more effective handling of dynamic datasets.
 
-\subsubsection{Adding New Documents}
-When a new document is added, the term-document matrix $A$ is extended by adding a new column. This column vector, denoted as $a_{\text{new}}$, contains the term frequencies for the new document. The SVD components are then updated as follows:
-\begin{itemize}
-    \item Compute the projection of $a_{\text{new}}$ onto the existing left singular vectors $U_k$: 
-    \[
-    p = U_k^T a_{\text{new}}
-    \]
-    \item Compute the residual vector $r$, which is the component of $a_{\text{new}}$ orthogonal to $U_k$: 
-    \[
-    r = a_{\text{new}} - U_k p
-    \]
-    \item If $r$ is approximately zero, $a_{\text{new}}$ lies in the subspace spanned by $U_k$. Otherwise, normalize it to obtain a new singular vector component: 
-    \[
-    r = \frac{r}{\|r\|}
-    \]
-\end{itemize}
-The augmented matrices are then formed to incorporate these updates into the existing SVD structure:
-\begin{itemize}
-    \item Form the augmented left singular vectors $U_k$:
-    \[
-    \tilde{U}_k = [U_k \quad r]
-    \]
-    \item Form the augmented singular values $\Sigma_k$:
-    \[
-    \tilde{\Sigma}_k = \begin{bmatrix}
-    \Sigma_k & p \\
-    0 & \|r\|
-    \end{bmatrix}
-    \]
-    \item Update the right singular vectors $V_k$ to include the new document:
-    \[
-    \tilde{V}_k = \begin{bmatrix}
-    V_k & 0 \\
-    0 & 1
-    \end{bmatrix}
-    \]
-\end{itemize}
-These methods ensure that our SVD representation remains accurate and scalable as new data is incorporated.
-
 \subsubsection{Adding New Words}
-Similarly, introducing new words involves extending the term-document matrix $A$ by adding a new row for $a_{\text{new}}$. The update procedure includes:
-\begin{itemize}
-    \item Projecting $a_{\text{new}}$ onto the existing right singular vectors $V_k$: 
-    \[
-    p = a_{\text{new}} V_k
-    \]
-    \item Computing the residual vector $r$, orthogonal to $V_k$: 
-    \[
-    r = a_{\text{new}} - p V_k^T
-    \]
-    \item If $r$ is approximately zero, $a_{\text{new}}$ lies in the subspace spanned by $V_k$. Otherwise, normalize it to obtain a new singular vector component: 
-    \[
-    r = \frac{r}{\|r\|}
-    \]
-\end{itemize}
-The augmented matrices are then formed to incorporate these updates into the existing SVD structure:
-\begin{itemize}
-    \item Update the right singular vectors $V_k$:
-    \[
-    \tilde{V}_k = [V_k \quad r]
-    \]
-    \item Update the singular values $\Sigma_k$:
-    \[
-    \tilde{\Sigma}_k = \begin{bmatrix}
-    \Sigma_k & 0 \\
-    p^T & \|r\|
-    \end{bmatrix}
-    \]
-    \item Update the left singular vectors $U_k$ to include the new word:
-    \[
-    \tilde{U}_k = \begin{bmatrix}
-    U_k & 0 \\
-    0 & 1
-    \end{bmatrix}
-    \]
-\end{itemize}
-These methods ensure that our SVD representation remains accurate and scalable as new data is incorporated.
+
+In the process of updating the SVD with new documents, a frequency vector is constructed for each new word encountered. This vector is initially populated with zeros for all existing documents, reflecting the absence of the new word in those texts. The frequency count of the new word in the new document is then recorded in the last entry of this vector. This vector $q$ is then transformed into the document space using the formula:
+\[ \hat{q} = q V^T_k S_k \]
+
+\noindent Then, we append the vector to the matrix $U_k$:
+\[ \hat{U_k} = \begin{bmatrix} U_k \\ \hat{q} \end{bmatrix} \]
+
+\subsubsection{Adding New Documents}
+
+When adding a new document, we first create a vector $q$ for the document, where each entry represents the frequency of a word from that document. This only includes words, which have previously appeared in other documents, skipping any new words, which will be added later. This vector is then transformed into the existing document space using the formula:
+
+\[ \hat{q} = q^T U_k S^{-1}_k \]
+
+\noindent The vector is then appended to the matrix $V_k$:
+
+\[ \hat{V_k} = \begin{bmatrix} V_k & \hat{q} \end{bmatrix} \]
 
 \newpage
 \section{Implementation}
@@ -212,84 +155,126 @@ These methods ensure that our SVD representation remains accurate and scalable a
     \subsection{Tools}
     The first step in implementing our system is to select the appropriate tools and programming languages. 
     
-    We decided to use the programming language Python, due to its ease of use, versatility, and extensive collection of libraries. The following libraries are essential for our implementation:
+    \noindent We decided to use the programming language Python, due to its ease of use, versatility, and extensive collection of libraries. The following libraries are essential for our implementation:
 
     \begin{itemize}
-        \item \textbf{NumPy}
-        \item \textbf{Scikit-learn}
-        \item \textbf{Python-Docx}
+        \item NumPy
+        \item Scikit-learn
+        \item Python-Docx
     \end{itemize}
         \bigskip
         \noindent
-        \textbf{NumPy}
+    
+        \subsubsection{NumPy}
 
-        \noindent
-        The leading role in our implementation is played by NumPy, a fundamental package for numerical computing in Python. It provides support for large, multi-dimensional arrays and matrices, along with a collection of mathematical functions to operate on these arrays.
+        \noindent The leading role in our implementation is played by NumPy, a fundamental package for numerical computing in Python. It provides support for large, multi-dimensional arrays and matrices, along with a collection of mathematical functions to operate on these arrays.
 
-        Since our system relies heavily on large matrix operations, NumPy is an essential library for handling the underlying data structures and computations.
+        \bigskip  
+        \noindent Since our system relies heavily on large matrix operations, NumPy is an essential library for handling the underlying data structures and computations.
 
         \bigskip
-        \noindent
-        \textbf{Scikit-learn}
+        \subsubsection{Scikit-learn}
 
-        \noindent
-        Scikit-learn is a powerful machine learning library that provides simple and efficient tools for data mining and data analysis.
+        \noindent Scikit-learn is a powerful machine learning library that provides simple and efficient tools for data mining and data analysis.
         
-        We utilize Scikit-learn for its implementation of the Singular Value Decomposition (SVD) algorithm, which is a key component of our Latent Semantic Indexing (LSI) model. The SVD implementation we use is called "randomized\_svd", which is particularly well-suited for large sparse datasets, like the one we are working with. This implementation allows us to efficiently find a close approximation of the truncated SVD, which is crucial for our system's performance.
+        \bigskip
+        \noindent We utilize Scikit-learn for its implementation of the Singular Value Decomposition (SVD) algorithm, which is a key component of our Latent Semantic Indexing (LSI) model. The SVD implementation we use is called "randomized\_svd", which is particularly well-suited for large sparse datasets, like the one we are working with. This implementation allows us to efficiently find a close approximation of the truncated SVD, which is crucial for our system's performance.
 
-        Another important feature of Scikit-learn that we leverage is their collection of machine learning datasets. The dataset we decided to use for testing and evaluation purposes is the "20 Newsgroups" dataset, which contains approximately 13,000 newsgroup documents across 20 different categories.
+        \bigskip
+        \noindent Another important feature of Scikit-learn that we leverage is their collection of machine learning datasets. The dataset we decided to use for testing and evaluation purposes is the "20 Newsgroups" dataset, which contains approximately 13,000 newsgroup documents across 20 different categories.
 
 
         \bigskip
-        \noindent
-        \textbf{Python-Docx}
+        \subsubsection{Python-Docx}
 
         \noindent
         A simple library that we used for reading DOCX files. This allowed us to easily test our implementation on a smaller local dataset.
     
     \subsection{Nevem kaj kle sam pac da pokazm da se lahk preuredi}
 
-    \newpage
-    \subsection{Testing implementation}
-    To ensure the accuracy and efficiency of our system, we need to conduct thorough testing, but when dealing with machine learning models, it is often tricky finding the right metrics to evaluate the model's performance. For this reason, we tested our implementation in several ways.
+\subsection{Testing Implementation and Methodology}
+To ensure the accuracy and efficiency of our document retrieval system, thorough testing was conducted using a combination of automatic and manual methods. These methods were designed to address both the performance and the dynamic capabilities of the system under various conditions.
 
-        \bigskip
-        \noindent
-        \textbf{Automatic testing}
-        
-        \noindent
-        To achieve realively quick, reliable, and tangible results, we first implemented the following automatic testing idea:
-        All of our test data is structured in the form of e-mails. For this reason, every body of text comes with a "subject" line, that being a short description on what the e-mail is about. We can use this "subject" line as a query to our system. To ensure less bias, the subject line is removed from the testing data. The system then returns the most relevant e-mails based on the query. The results are then compared to the original "subject" line, and a score is given based on the relevance of the returned e-mails. If the correct e-mail is the most similar to our query, the score is 1, else if the correct e-mail is within the top 10 most similar e-mails, we award a score equaling the similarity of the correct e-mail, that being the one, where the subject matches the subject of the e-mail.
+\subsubsection{Automatic Testing}
+\noindent
+Our test data is structured in the form of emails, each including a "subject" line which serves as a concise description of the content. In our testing setup, we removed the subject line from the email to use as a query, reducing bias in testing. The system then retrieves the most relevant emails based on these queries. Results are compared to the original subject lines to assess relevance. The scoring system awards full points if the correct email is the most similar to the query. If the correct email ranks within the top ten of the most similar emails, points are awarded based on its similarity score.
 
-        \bigskip
-        \noindent
-        \textbf{Manual testing}
+\subsubsection{Manual Testing}
+\noindent
+In addition to automated tests, we manually selected queries and assessed the relevance of the returned documents. This approach allowed for a detailed evaluation of the system's effectiveness and helped identify potential areas for improvement. Different metrics were utilized to assess whether a returned document was genuinely relevant.
 
-        \noindent
-        To further evaluate the system's performance, we conducted manual testing. This involved selecting a set of queries and manually assessing the relevance of the returned documents. This method allowed us to gain a deeper understanding of the system's performance and identify areas for improvement, as we have many different metrics to evaluate if a returned document is useful to us or not.
-
-\newpage
-\section{Results}
-
-\subsection{Testing Methodology}
-The testing methodology for our text processing system is designed to evaluate the accuracy and efficiency of document retrieval capabilities. This evaluation is critical for ensuring that the system performs optimally under various operational conditions and with different datasets. The testing process includes the following key steps:
+\subsubsection{Evaluation Criteria}
+The evaluation process therefore includes several key steps to ensure comprehensive testing:
 
 \begin{enumerate}
-    \item \textbf{Relevance and Accuracy Assessment:} For each query, the system retrieves documents based on cosine similarity measures, comparing the system’s output against expected results. The accuracy is quantified by how closely the retrieved documents match the predefined relevant documents or subjects.
-
-    \item \textbf{Performance Scoring:} The system assigns scores based on the relevance of the retrieved documents. Full points are awarded for exact matches, while partial scores are given for documents that are close but not exact, based on their similarity metrics.
-
-    \item \textbf{Dynamic Data Integration Tests:} \textcolor{red}{abomo to idk ?} system is tested for its ability to dynamically update the term-document matrix and SVD components when new documents are added to the corpus. This ensures that the system remains accurate and efficient as the dataset grows.
+    \item \textbf{Relevance and Accuracy Assessment:} Documents are retrieved based on cosine similarity measures for each query. Accuracy is quantified by the closeness of the retrieved documents to predefined relevant documents or subjects.
+    \item \textbf{Performance Scoring:} The system assigns scores based on the relevance of the retrieved documents. Exact matches receive full points, while partial scores are awarded for close matches, based on their similarity metrics.
+    \item \textbf{Dynamic Data Integration Tests:} The system's ability to dynamically update the term-document matrix and SVD components when new documents are added is critically tested. This ensures that the system maintains its accuracy and efficiency as the dataset grows.
 \end{enumerate}
 
-\noindent This structured testing strategy ensures that our document retrieval system is thoroughly evaluated for accuracy, providing confidence in its capability to handle real-world applications effectively.
+\noindent
+This structured testing strategy ensures that our document retrieval system is thoroughly evaluated for accuracy and reliability.
 
+\newpage
+
+\section{Results}
 
 \subsection{Non-optimized Solution}
 
+The table below presents the results of testing different configurations of the non-optimized solution implemented in the document retrieval system. Each entry in the table corresponds to the output from a series of automated script executions that vary two main parameters: the number of documents $k$ and a threshold value.
+
+\begin{table}[h!]
+    \centering
+    \arrayrulecolor{black} % Set the color of the table lines to black
+    \setlength{\arrayrulewidth}{0.5mm} % Set the width of the table lines
+    \renewcommand{\arraystretch}{1.5} % Increasing the height of rows
+    \rowcolors{2}{gray!25}{white} % Alternating row colors starting from the second row
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+    \hline
+    \rowcolor{black!75} % Header row color
+    & \color{white}\textbf{0.10} & \color{white}\textbf{0.20} & \color{white}\textbf{0.30} & \color{white}\textbf{0.40} & \color{white}\textbf{0.50} & \color{white}\textbf{0.60} & \color{white}\textbf{0.70} & \color{white}\textbf{0.80} & \color{white}\textbf{0.90} \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{10} & 52.17 & 52.17 & 52.17 & 52.17 & 52.17 & 51.59 & 50.97 & 44.25 & 25.77 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{50} & 182.6 & 182.6 & 182.6 & 177.4 & 157.5 & 115.1 & 93.88 & 73.63 & 30 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{100} & 277.3 & 277.3 & 271.3 & 237.5 & 182.5 & 122.6 & 100.7 & 70 & 22 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{250} & 469.2 & 468.2 & 436.3 & 355.4 & 255.8 & 191.9 & 127.7 & 83 & 26 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{500} & 613.5 & 606.9 & 557.6 & 465.0 & 356.9 & 239.6 & 155 & 81 & 28 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{750} & 668.4 & 660.4 & 618.1 & 526.5 & 389.5 & 281.7 & 168 & 100 & 26 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{1000} & 641.9 & 627.2 & 580.6 & 486.4 & 385.2 & 295.6 & 213 & 119 & 37 \\ \hline
+    \end{tabular}
+    \caption{Non-optimized Solution for Different Values of $k$}
+\end{table}
+
+\subsubsection{Table Structure}
+\begin{itemize}
+  \item \textbf{Rows:} Each row represents a different \( k \) value, where \( k \) is the number of documents. The \( k \) values range from 10 to 1000, allowing us to test the system's scalability across different document counts
+  \item \textbf{Columns:} The columns represent different threshold values, related to the cosine similarity thresholds used in the retrieval process. These values range from 0.1 to 0.9, affecting how strict the similarity criterion is for considering two documents as closely related.
+  \item \textbf{Cell Values:} Each cell in the table represents the number of points the program scored for each combination of \( k \) and cosine similarity threshold. These values illustrate how the retrieval effectiveness varies with the complexity of the model and the strictness of the similarity threshold.
+
+\end{itemize}
 
 
 \subsection{Optimized Solution}
+
+\begin{table}[h!]
+    \centering
+    \arrayrulecolor{black} % Set the color of the table lines to black
+    \setlength{\arrayrulewidth}{0.5mm} % Set the width of the table lines
+    \renewcommand{\arraystretch}{1.5} % Increasing the height of rows
+    \rowcolors{2}{gray!25}{white} % Alternating row colors starting from the second row
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+    \hline
+    \rowcolor{black!75} % Header row color
+    & \color{white}\textbf{0.10} & \color{white}\textbf{0.20} & \color{white}\textbf{0.30} & \color{white}\textbf{0.40} & \color{white}\textbf{0.50} & \color{white}\textbf{0.60} & \color{white}\textbf{0.70} & \color{white}\textbf{0.80} & \color{white}\textbf{0.90} \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{10}   & 71.18 & 71.18 & 71.18 & 71.18 & 70.72 & 68.47 & 68.47 & 63.06 & 44.12 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{50}    & 300.6 & 300.6 & 300.0 & 298.9 & 286.6 & 259.3 & 198.7 & 128.5 & 57.95 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{100}   & 442.1 & 442.1 & 441.2 & 417.0 & 354.4 & 273.8 & 180.7 & 116.5 & 58 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{250}   & 637.2 & 636.5 & 622.4 & 547.8 & 426.8 & 304.0 & 213.5 & 128.8 & 61 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{500}   & 726.5 & 722.5 & 674.8 & 576.7 & 435.6 & 325.3 & 201.0 & 102 & 65 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{750}   & 753.3 & 741.5 & 685.0 & 589.2 & 459.6 & 322.3 & 219 & 123 & 56 \\ \hline
+    \cellcolor{black!75}\color{white}\textbf{1000}  & 673.5 & 657.3 & 604.0 & 499.4 & 409.7 & 316.6 & 232 & 141 & 70 \\ \hline
+    \end{tabular}
+    \caption{Optimized Solution for Different Values of $k$}
+\end{table}
 
 \subsection{Additional Improvements}
 
