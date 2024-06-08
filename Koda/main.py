@@ -20,6 +20,7 @@ cosinus_threadhold = 0.6
 modes = ["unoptimized", "optimized"]
 mode = modes[0]
 data_limit = 1000000000
+new_data_limit = 1000000000
 
 save_files_folder = os.path.join("savedMatricies", "savedMatricies_") # Appended in argsparse
 u_file = "U.npy"
@@ -216,6 +217,7 @@ def add_new_file_name(u_k, is_k, v_k, file_names, word_map, word_list, new_file_
 
 def add_file_words(u_k, s_k, v_k, file_names, word_map, word_list, new_data):
     # Since documents are stored as columns in the V_k matrix, we can do an inverse transformation to add new words to the U_k matrix
+    debug.log("Adding new words")
     data_split = new_data.split()
     new_words = set()
     for word in data_split:
@@ -237,10 +239,10 @@ def add_file_words(u_k, s_k, v_k, file_names, word_map, word_list, new_data):
     
     return u_k, s_k, v_k, word_map, word_list
         
-def add_new_documents(u_k, s_k, v_k, file_names, word_map, word_list, data_limit):
+def add_new_documents(u_k, s_k, v_k, file_names, word_map, word_list):
     debug.log("Adding new documents")
     is_k = s_k_inverse(s_k)
-    new_file_names, new_data = gm.get_new_data(document_folder, file_names, data_limit)
+    new_file_names, new_data = gm.get_new_data(document_folder, file_names, data_limit+new_data_limit)
     for i in range(len(new_file_names)):
         # Add new document
         u_k, is_k, v_k, file_names = add_new_file_name(u_k, is_k, v_k, file_names, word_map, word_list, new_file_names[i], new_data[i])
@@ -259,6 +261,7 @@ def setup_parser():
     global save_files_folder
     global recompute
     global data_limit
+    global new_data_limit
     global should_add_new_documents
     global testing
     parser = argparse.ArgumentParser(description='Find the closest document to a prompt')
@@ -272,6 +275,7 @@ def setup_parser():
     parser.add_argument('--compute', help='Compute all files again.', action='store_true')
     parser.add_argument('-l', '--limit', type=int, help='The max number of documents to use. Default is ' + str(data_limit) + '.', default=data_limit)
     parser.add_argument('-a', '--add', help='Add all new documents to the database.', action='store_true')
+    parser.add_argument('-al', '--addlimit', type=int, help='The max number of new documents to add. Default is unlimited.', default=1000000000)
     parser.add_argument('-t', '--test', help='Run the test suite. Always uses online data. Generates new tables.', action='store_true')
     args = parser.parse_args()
     
@@ -299,6 +303,8 @@ def setup_parser():
         data_limit = args.limit
     if args.add:
         should_add_new_documents = True
+    if args.addlimit:
+        new_data_limit = args.addlimit
     if args.test:
         testing = True
         
@@ -385,12 +391,12 @@ def run():
     is_k = s_k_inverse(s_k)
     
     if should_add_new_documents:
-        u_k, s_k, v_k, file_names, word_map, word_list = add_new_documents(u_k, s_k, v_k, file_names, word_map, word_list, data_limit)
+        u_k, s_k, v_k, file_names, word_map, word_list = add_new_documents(u_k, s_k, v_k, file_names, word_map, word_list)
             
 
     if testing: # If we are running the test suite. Here we remove the file information from the training data, then feed the file "subjects" as the search prompt. We only ever do this on online files
-        subjects = gm.get_subjects(data_limit) # Get the subjects of the documents
-        temp_file_names, temp_data = gm.get_data(document_folder, data_limit) # Get the titles and data of the documents
+        subjects = gm.get_subjects(data_limit+new_data_limit) # Get the subjects of the documents
+        temp_file_names, temp_data = gm.get_data(document_folder, data_limit+new_data_limit) # Get the titles and data of the documents
         
         i = -1
         print("Testing")
