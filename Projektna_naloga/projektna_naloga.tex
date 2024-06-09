@@ -275,15 +275,21 @@ We manually tested the optimized solution with the improvement of folding-in new
 
 \subsection{Discussion}
 Observing the results from both the non-optimized and optimized solutions, several key insights can be drawn:
-\begin{list}{-}{}
+\begin{itemize}
     \item The optimized solution consistently outperforms the non-optimized solution across all tested configurations. This improvement is most notable in scenarios with higher \( k \) values and stricter cosine similarity thresholds.
     \item The optimized solution demonstrates better scalability and robustness, maintaining higher scores as the dimensionality of the space increases.
     \item The non-optimized solution shows a decline in performance as the number of singular values \( k \) grows, indicating limitations in handling larger datasets and more complex models.
     \item Both solutions exhibit a general trend of decreasing scores with stricter cosine similarity thresholds, reflecting the trade-off between precision and recall in document retrieval.    
-\end{list}
+\end{itemize}
 
-We conducted different testing for the optimized solution, showing only the better ones where we flipped the sign in formula for weighting of terms \[ G_i = 1 - \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n} \rightarrow G_i = 1 + \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n} \] 
-The results showed that the optimized solution with the original formula performed better - this may be due to key words often found in the subject line in our documents.
+\bigskip
+\noindent We conducted different testing for the optimized solution, showing only the better ones where we flipped the sign in formula for weighting of terms:
+
+
+\[ G_i = 1 - \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n} \rightarrow G_i = 1 + \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n} \]
+
+
+\noindent The results showed that the optimized solution with the original formula performed better - this may be due to key words often found in the subject line in our documents.
 
 \bigskip
 \begin{flushleft}
@@ -291,11 +297,13 @@ The results showed that the optimized solution with the original formula perform
 \end{flushleft}
 
 
-We have noticed that when folding-in new terms and documents, the system's performance starts declining rapidly after adding around 5\% new documents (relatively to the number of already existing ones). This is due to the fact that the new documents are not as relevant to the existing ones, and the system has a hard time finding the right documents. 
+\noindent We have noticed that when folding-in new terms and documents, the system's performance starts declining rapidly after adding around 5\% new documents (relatively to the number of already existing ones). This is due to the fact that the new documents are not as relevant to the existing ones, and the system has a hard time finding the right documents. 
 
-This is a common issue with LSI models, as they are not as effective when dealing with large amounts of new data that is not closely related to the existing data.
+\bigskip
+\noindent This is a common issue with LSI models, as they are not as effective when dealing with large amounts of new data that is not closely related to the existing data.
 
-Folding-in more than 5\% new documents and/or terms there is a rapid fall off in performance, and behaviour of the system may become unpredictable. The results we got seemed random and we advise against using the system in such a state.
+\bigskip
+\noindent Folding-in more than 5\% new documents and/or terms there is a rapid fall off in performance, and behaviour of the system may become unpredictable. The results we got seemed random and we advise against using the system in such a state.
 \newpage
 \section{References and Code}
 
