@@ -156,11 +156,6 @@ def testing_analysis(closest_documents, subject, temp_file_names, temp_data):
         current_data = temp_data[index]
         gotten_subject = gm.get_subject_from_document(current_data).lower()
         if gotten_subject == subject: # If the "correct" document was within the top 10, add the similarity score. If it was the most similar, add 1. This testing method rewards overfitting, which might not be ideal, depending on the wanted result
-            if i == 0:
-                testing_score += 1
-                return
-            
-            # testing_score += closest_documents[i][1] # The similarity score
             testing_score += 1
             return
     
