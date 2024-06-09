@@ -12,6 +12,9 @@
 \usepackage{colortbl}
 
 \definecolor{siva}{RGB}{235,235,235}
+\definecolor{code_blue}{RGB}{66, 135, 245}
+\definecolor{code_comment}{RGB}{245, 173, 66}
+\definecolor{code_string}{RGB}{161, 73, 201}
 \lstdefinestyle{Matlab-Pyglike}{
     language=Matlab,
     backgroundcolor=\color{siva},
@@ -25,6 +28,20 @@
     showtabs=false,
     tabsize=2
 }
+
+\lstset{
+    language=Python,
+    breaklines=True,
+    basicstyle=\ttfamily\scriptsize,
+    keywordstyle=\color{code_blue},
+    stringstyle=\color{code_string},
+    commentstyle=\color{code_comment},
+    morecomment=[l][\color{magenta}]{\#}
+}
+
+\DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{12} % for bold
+\DeclareFixedFont{\ttm}{T1}{txtt}{m}{n}{12}  % for normal
+
 \title{Search within a collection of documents\\
 \normalsize{Mathematical Modelling}
 }
@@ -38,16 +55,18 @@
 \tableofcontents
 
 \newpage
-\section{Problem description}
+\section{Introduction}
 
 In today's digital landscape, the abundance of online information poses a significant challenge known as information overload. Traditional search methods, relying heavily on exact keyword matches, often struggle to cope with this deluge of data. They fail to account for the diverse ways people express ideas, such as using synonyms and related terms, leading to incomplete or irrelevant search results.
 
 \bigskip
-\noindent This deficiency highlights the need for a more sophisticated approach that can decipher the deeper semantic relationships between words and documents. Latent Semantic Indexing (LSI) offers a solution by going beyond literal keyword matching. It builds a model that understands the conceptual connections within content, thereby improving the accuracy and comprehensiveness of information retrieval.
+\noindent This deficiency highlights the need for a more sophisticated approach that can decipher the deeper semantic relationships between words and documents. Latent Semantic Indexing (LSI) offers a solution by going beyond literal keyword matching. It builds a model which understands the conceptual connections within content, thus improving the accuracy and comprehensiveness of information retrieval.
+
+\newpage
+\section{Search within a collection of documents}
 
 \bigskip
-\noindent This project aims to implement an LSI-based search engine that can efficiently process and retrieve relevant documents from a collection based on user queries. 
-
+\noindent This project aims to implement an LSI-based search engine that can efficiently process and retrieve relevant documents from a collection based on user queries.
 
 \subsection{Approach and Methodology}
 
@@ -55,8 +74,8 @@ The project involves the following key steps:
 
 \begin{enumerate}
     \item Data Collection: Gather a collection of documents to form the basis of the search engine.
-    \item Implementing LSI: Develop an LSI model to analyze the relationships between words and documents in the collection.
-    \item Improving the model.
+    \item Implementing the LSI model: Develop an LSI model to analyze the relationships between words and documents in the collection.
+    \item Testing and improving the model.
 \end{enumerate}
 
 
@@ -65,14 +84,15 @@ The project involves the following key steps:
 We are using publicly available data for analysis. This involves curating a diverse set of documents to ensure the search engine's effectiveness across different topics and domains.
 
 
-\subsubsection{Implementing LSI}
+\subsubsection{Implementing the LSI model}
 
-Implementing LSI entails the following steps:
+Implementing the LSI model entails the following steps:
 
 \begin{enumerate}
     \item Building an $A$ matrix of connections between words and documents from a document selection, where each document has its own column in the matrix and each word has its row. The element $a_{ij}$ represents the frequency of the $i$-th word in the $j$-th document.
     \item Splitting the matrix $A$ using the SVD method, where $A = U_k  S_k  V_k^T$, which only has $k$ significant singular values.
-    \item Writing the query with the vector $q$ and generating a vector from the $q$ query in the document space with the formula $\hat{q} = q^T U_k S_k^{-1}$. The query should return documents for which the cosine is higher than the selected limit.
+    \item Creating a query vector $q$ from the query, where each element represents the frequency of a word in the query. We only consider words that appear in the document collection.
+    \item Generating a new vector from the $q$ query vector in the document space with the formula $\hat{q} = q^T U_k S_k^{-1}$. The query should return documents for which the cosine similarity value is higher than the selected limit.
 \end{enumerate}
 
 \subsubsection{Improving the model}
@@ -89,12 +109,12 @@ and the global measure of importance is calculated using entropy:
 where $n$ is the total number of documents in the collection, $p_{ij} = \frac{f_ {ij}}{g f_i}$, and $gf_i$ is the frequency of a word in the whole collection.
 
 \bigskip
-\noindent The model can be further improved by adding new documents or words withut having to recalculate the $SVD$ of the matrix $A$.
+\noindent The model can be further improved by adding new documents or words without having to recalculate the $SVD$ of the matrix $A$.
 
 \newpage
 \section{Solution}
 
-\subsection{Non-optimized Solution}
+\subsection{Frequency Solution}
 
 Our initial approach involves the construction of a basic frequency matrix, which serves as the foundation for text representation within our system. We construct the matrix as described below:
 
@@ -108,8 +128,15 @@ Our initial approach involves the construction of a basic frequency matrix, whic
 \noindent This matrix construction does not include any advanced data handling or algorithmic optimization but lays the groundwork for further processing and analysis. The simplicity of this method gives us a clear view of the text data's key elements.
 
 
+\subsection{Weighted Solution}
+
+Looking further to improve our search methods, a key challenge lies in managing the influence of word frequencies. Common words can dominate search results, while rare words might disproportionately affect outcomes, even if they're informative. To solve this problem, we have implemented an optimization technique for the term-document matrix that helps ensure no single group of words skews the results too much.
+
 \bigskip
-\noindent \textbf{Code Utilization and Output:}
+\noindent Our weighted solution improves previous method by substituting word frequencies in our matrix with more sophisticated metrics. These include a local measure that employs logarithmic transformations of word frequencies, and a global measure derived from entropy. This approach ensures that the impact of each word on search results accurately reflects its genuine informational value while maintaining a balanced and effective retrieval system.
+
+
+\subsection{Code Utilization and Output:}
 \noindent The code operates by taking a collection of documents as input and proceeds through several steps:
 \begin{enumerate}
     \item \textbf{Matrix Generation:} All text documents are processed to generate the basic frequency matrix as described above.
@@ -118,25 +145,8 @@ Our initial approach involves the construction of a basic frequency matrix, whic
 \end{enumerate}
 The primary outputs from this process include a list of documents ranked by their relevance to the input query. These results help identify the most pertinent documents without the need to manually sift through the entire dataset.
 
-
-\subsection{Optimized Solution}
-
-Looking further to improve our search methods, a key challenge lies in managing the influence of word frequencies. Common words can dominate search results, while rare words might disproportionately affect outcomes, even if they're informative. To solve this problem, we have implemented an optimization technique for the term-document matrix that helps ensure no single group of words skews the results too much.
-
-\bigskip
-\noindent Our optimized solution improves previous method by substituting word frequencies in our matrix with more sophisticated metrics. These include a local measure that employs logarithmic transformations of word frequencies, and a global measure derived from entropy. This approach ensures that the impact of each word on search results accurately reflects its genuine informational value while maintaining a balanced and effective retrieval system.
-
-
 \subsection{Additional Improvements}
 So far, our approach, while efficient, still requires recomputing the Singular Value Decomposition (SVD) each time a new document or word is added. To resolve this issue, we have implemented an update mechanism that integrates new data into the existing SVD structure without the need for full recomputation. This enhancement significantly improves the scalability and efficiency of our system, enabling more effective handling of dynamic datasets.
-
-\subsubsection{Adding New Words}
-
-In the process of updating the SVD with new documents, a frequency vector is constructed for each new word encountered. This vector is initially populated with zeros for all existing documents, reflecting the absence of the new word in those texts. The frequency count of the new word in the new document is then recorded in the last entry of this vector. This vector $q$ is then transformed into the document space using the formula:
-\[ \hat{q} = q V^T_k S_k \]
-
-\noindent Then, we append the vector to the matrix $U_k$:
-\[ \hat{U_k} = \begin{bmatrix} U_k \\ \hat{q} \end{bmatrix} \]
 
 \subsubsection{Adding New Documents}
 
@@ -148,6 +158,15 @@ When adding a new document, we first create a vector $q$ for the document, where
 
 \[ \hat{V_k} = \begin{bmatrix} V_k & \hat{q} \end{bmatrix} \]
 
+\subsubsection{Adding New Words}
+
+In the process of updating the SVD with new documents, a frequency vector is constructed for each new word encountered. This vector is initially populated with zeros for all existing documents, reflecting the absence of the new word in those texts. The frequency count of the new word in the new document is then recorded in the last entry of this vector. This vector $q$ is then transformed into the document space using the formula:
+\[ \hat{q} = q V^T_k S_k \]
+
+\noindent Then, we append the vector to the matrix $U_k$:
+\[ \hat{U_k} = \begin{bmatrix} U_k \\ \hat{q} \end{bmatrix} \]
+
+
 \newpage
 \section{Implementation}
     With our understanding of the problem and the proposed solutions, we now move to the implementation phase. This section details the technical aspects of our system, including the code structure, key functions, and the overall workflow.
@@ -155,16 +174,16 @@ When adding a new document, we first create a vector $q$ for the document, where
     \subsection{Tools}
     The first step in implementing our system is to select the appropriate tools and programming languages. 
     
-    \noindent We decided to use the programming language Python, due to its ease of use, versatility, and extensive collection of libraries. The following libraries are essential for our implementation:
+    \bigskip
+    \noindent We decided to use the programming language $Python$, due to its ease of use, versatility, and extensive collection of libraries. The following libraries are essential for our implementation:
 
     \begin{itemize}
         \item NumPy
         \item Scikit-learn
         \item Python-Docx
     \end{itemize}
-        \bigskip
+
         \noindent
-    
         \subsubsection{NumPy}
 
         \noindent The leading role in our implementation is played by NumPy, a fundamental package for numerical computing in Python. It provides support for large, multi-dimensional arrays and matrices, along with a collection of mathematical functions to operate on these arrays.
@@ -178,7 +197,7 @@ When adding a new document, we first create a vector $q$ for the document, where
         \noindent Scikit-learn is a powerful machine learning library that provides simple and efficient tools for data mining and data analysis.
         
         \bigskip
-        \noindent We utilize Scikit-learn for its implementation of the Singular Value Decomposition (SVD) algorithm, which is a key component of our Latent Semantic Indexing (LSI) model. The SVD implementation we use is called "randomized\_svd", which is particularly well-suited for large sparse datasets, like the one we are working with. This implementation allows us to efficiently find a close approximation of the truncated SVD, which is crucial for our system's performance.
+        \noindent We utilize Scikit-learn for its implementation of the SVD algorithm, which is a key component of our LSI model. The SVD implementation we use is called "randomized\_svd", which is particularly well-suited for large sparse datasets, like the one we are working with. This implementation allows us to efficiently find a close approximation of the truncated SVD, which is crucial for our system's performance.
 
         \bigskip
         \noindent Another important feature of Scikit-learn that we leverage is their collection of machine learning datasets. The dataset we decided to use for testing and evaluation purposes is the "20 Newsgroups" dataset, which contains approximately 13,000 newsgroup documents across 20 different categories.
@@ -225,7 +244,7 @@ Here is an overview of the table structures used to present the results of our t
   \item \textbf{Cell Values:} Each cell in the table represents the number of points the program scored for each combination of \( k \) and cosine similarity threshold. These values illustrate how the retrieval effectiveness varies with the complexity of the model and the strictness of the similarity threshold.
 \end{itemize}
 
-The tables present the results of testing different configurations of the non-optimized and optimized solution implemented in the document retrieval system (results based on testing on 1000 documents).
+The tables present the results of testing different configurations of the non-weighted and weighted solution implemented in the document retrieval system (results based on testing on 1000 documents).
 \newpage
 
 \begin{table}[h!]
@@ -246,7 +265,7 @@ The tables present the results of testing different configurations of the non-op
     \cellcolor{black!75}\color{white}\textbf{750} & 668.4 & 660.4 & 618.1 & 526.5 & 389.5 & 281.7 & 168 & 100 & 26 \\ \hline
     \cellcolor{black!75}\color{white}\textbf{1000} & 641.9 & 627.2 & 580.6 & 486.4 & 385.2 & 295.6 & 213 & 119 & 37 \\ \hline
     \end{tabular}
-    \caption{Non-optimized Solution for Different Values of $k$}
+    \caption{Non-weighted Solution for Different Values of $k$}
 \end{table}
 
 \begin{table}[h!]
@@ -271,31 +290,32 @@ The tables present the results of testing different configurations of the non-op
 \end{table}
 
 \subsection{Manual testing}
-We manually tested the optimized solution with the improvement of folding-in new documents and words. This was done on an optimized solution. This was done on a collection of 1000 documents and we slowly added more documents and terms to the system, till it's behaviour became unpredictable and the results seemed random.
+We manually tested the weighted solution with the improvement of folding-in new documents and words. This was done on an weighted solution. This was done on a collection of 1000 documents and we slowly added more documents and terms to the system, till it's behaviour became unpredictable and the results seemed random.
 
 \subsection{Discussion}
-Observing the results from both the non-optimized and optimized solutions, several key insights can be drawn:
+In this section we will discuss our findings.
+\subsubsection{Comparing Original and Weighted solution}
+Observing the results from both the non-weighted and weighted solutions, several key insights can be drawn:
 \begin{itemize}
-    \item The optimized solution consistently outperforms the non-optimized solution across all tested configurations. This improvement is most notable in scenarios with higher \( k \) values and stricter cosine similarity thresholds.
-    \item The optimized solution demonstrates better scalability and robustness, maintaining higher scores as the dimensionality of the space increases.
-    \item The non-optimized solution shows a decline in performance as the number of singular values \( k \) grows, indicating limitations in handling larger datasets and more complex models.
+    \item The weighted solution consistently outperforms the non-weighted solution across all tested configurations. This improvement is most notable in scenarios with higher \( k \) values and stricter cosine similarity thresholds.
+    \item The weighted solution demonstrates better scalability and robustness, maintaining higher scores as the dimensionality of the space increases.
+    \item The non-weighted solution shows a decline in performance as the number of singular values \( k \) grows, indicating limitations in handling larger datasets and more complex models.
     \item Both solutions exhibit a general trend of decreasing scores with stricter cosine similarity thresholds, reflecting the trade-off between precision and recall in document retrieval.    
 \end{itemize}
 
 \bigskip
-\noindent We conducted different testing for the optimized solution, showing only the better ones where we flipped the sign in formula for weighting of terms:
+\noindent We conducted different testing for the weighted solution, one of which was changing the formula for the global measure of importance. We changed the formula from:
 
 
-\[ G_i = 1 - \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n} \rightarrow G_i = 1 + \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n} \]
+\[ G_i = 1 - \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n} \quad \longrightarrow \quad G_i = 1 + \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n} \]
 
-
-\noindent The results showed that the optimized solution with the original formula performed better - this may be due to key words often found in the subject line in our documents.
+\noindent This causes the inverse effect of the original goal, which was preventing "over-fitting", meaning putting too much focus on specific words.
 
 \bigskip
-\begin{flushleft}
-    \textbf{Discussion on folding-in new documents and terms:}
-\end{flushleft}
+\noindent The results showed that the weighted solution with the original formula performed better - this may be due to key words often found in the subject line in our documents.
 
+\newpage
+\subsubsection{Folding-in new documents and terms}
 
 \noindent We have noticed that when folding-in new terms and documents, the system's performance starts declining rapidly after adding around 5\% new documents (relatively to the number of already existing ones). This is due to the fact that the new documents are not as relevant to the existing ones, and the system has a hard time finding the right documents. 
 
@@ -305,10 +325,26 @@ Observing the results from both the non-optimized and optimized solutions, sever
 \bigskip
 \noindent Folding-in more than 5\% new documents and/or terms there is a rapid fall off in performance, and behaviour of the system may become unpredictable. The results we got seemed random and we advise against using the system in such a state.
 \newpage
+\section{Conclusion}
+Through making this paper, we found that LSI models are an effective tool for searching through large collections of documents, with a relatively simple implementation. We have also found that the weighted solution outperforms the non-weighted solution, though different weighing methods are worth looking into. The system can also be improved by adding new documents and terms without having to recalculate the SVD of the matrix, which could lead to long downtimes in a real-world scenario.
+
+\bigskip
+\noindent
+This project helped us in the field of machine learning and natural language processing, while also reinforcing our programming and linear algebra knowledge.
+
+\newpage
 \section{References and Code}
 
-\begin{lstlisting}[style=Matlab-Pyglike]
-PLACEHOLDER FOR CODE
-\end{lstlisting}
+\subsection{main.py}
+\lstinputlisting[language=Python, breaklines=True]{../Koda/main.py}
+\newpage
+\subsection{generateMatrix.py}
+\lstinputlisting[language=Python, breaklines=True]{../Koda/generateMatrix.py}
+\newpage
+\subsection{debug.py}
+\lstinputlisting[language=Python, breaklines=True]{../Koda/debug.py}
+% \begin{lstlisting}[style=Matlab-Pyglike]
+
+% \end{lstlisting}
 
 \end{document}
