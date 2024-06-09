@@ -6,7 +6,6 @@
 *.synctex.gz
 *.out
 *.nav
-*.pdf
 *.snm
 projektna_naloga.pdf
 __pycache__/
