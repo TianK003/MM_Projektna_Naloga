@@ -16,7 +16,7 @@ import time
 
 document_folder = "documents"
 k = 1000
-cosinus_threadhold = 0.6
+cosinus_threadhold = 0.3
 modes = ["unoptimized", "optimized"]
 mode = modes[0]
 data_limit = 1000000000
@@ -95,6 +95,8 @@ def svd(matrix, k, files_saved): # Singular Value Decomposition
     s_k = np.diag(s[:k])
     v_k = V[:k, :]
         
+    debug.log("shape of v_k here: " + str(v_k.shape))
+        
     return u_k, s_k, v_k
 
 def build_query_vector(prompt, word_map, word_list):
@@ -153,13 +155,13 @@ def testing_analysis(closest_documents, subject, temp_file_names, temp_data):
         index = np.nonzero(np.array(temp_file_names) == closest_documents[i][0])[0][0]
         current_data = temp_data[index]
         gotten_subject = gm.get_subject_from_document(current_data).lower()
-        
         if gotten_subject == subject: # If the "correct" document was within the top 10, add the similarity score. If it was the most similar, add 1. This testing method rewards overfitting, which might not be ideal, depending on the wanted result
             if i == 0:
                 testing_score += 1
                 return
             
-            testing_score += closest_documents[i][1] # The similarity score
+            # testing_score += closest_documents[i][1] # The similarity score
+            testing_score += 1
             return
     
     debug.log("Failed to find subject: |" + subject + "|")
@@ -213,6 +215,7 @@ def add_new_file_name(u_k, is_k, v_k, file_names, word_map, word_list, new_file_
     v_k[:,-1] = altered_document_vector
     file_names.append(new_file_name)
     
+    
     return u_k, is_k, v_k, file_names
 
 def add_file_words(u_k, s_k, v_k, file_names, word_map, word_list, new_data):
@@ -224,7 +227,9 @@ def add_file_words(u_k, s_k, v_k, file_names, word_map, word_list, new_data):
         if word not in word_map:
             new_words.add(word)
     
+    debug.log("New words: " + str(new_words))
     for word in new_words: # Add every new word we found in the data to U_k one by one
+        debug.log("Adding word: " + word)
         word_map[word] = len(word_list)
         word_list.append(word)
         count = 0
@@ -232,6 +237,9 @@ def add_file_words(u_k, s_k, v_k, file_names, word_map, word_list, new_data):
             if word == data_split[j]:
                 count += 1
         word_query_vector = np.zeros(len(file_names))
+        debug.log("Length of word_query_vector: " + str(len(word_query_vector)))
+        debug.log("Length of file names: " + str(len(file_names)))
+        debug.log("shape of v_k " + str(v_k.shape))
         word_query_vector[-1] = count
         altered_word_query_vector = np.dot(np.dot(word_query_vector, v_k.T), s_k)
         u_k = np.vstack((u_k, np.zeros((1, u_k.shape[1]), dtype=u_k.dtype)))
@@ -301,10 +309,12 @@ def setup_parser():
         recompute = True
     if args.limit:
         data_limit = args.limit
-    if args.add:
-        should_add_new_documents = True
     if args.addlimit:
         new_data_limit = args.addlimit
+    if args.add:
+        should_add_new_documents = True
+    else:
+        new_data_limit = 0
     if args.test:
         testing = True
         
@@ -368,6 +378,7 @@ def run():
     files_saved = check_saved() 
     file_names, word_map, word_list, matrix = None, None, None, None
     
+    gm.testing = testing
     debug.log("Getting data")
     if not files_saved: # If we don't have the data saved, we need to compute it and save it
         optimize = False
@@ -397,7 +408,6 @@ def run():
     if testing: # If we are running the test suite. Here we remove the file information from the training data, then feed the file "subjects" as the search prompt. We only ever do this on online files
         subjects = gm.get_subjects(data_limit+new_data_limit) # Get the subjects of the documents
         temp_file_names, temp_data = gm.get_data(document_folder, data_limit+new_data_limit) # Get the titles and data of the documents
-        
         i = -1
         print("Testing")
         for subject in subjects:

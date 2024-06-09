@@ -30,6 +30,9 @@ def get_new_data(folder, prev_file_names, data_limit):
             new_data.append(all_data[i])
             new_file_names.append(all_file_names[i])
     
+    if testing:
+        print("-"*50)
+        alter_data_for_testing(new_data)
     correct_data_for_testing(new_data)
     
     debug.log("New data found: " + str(len(new_data)))
@@ -66,12 +69,13 @@ def get_subjects(data_limit):
 def alter_data_for_testing(data):
     global testing
     global subjects
-    debug.log("Altering data for testing")
+    debug.log("Altering data for testing (removing metadata and subjects)")
     
     for i in range(len(data)):
         split = data[i].split("Lines:")
+        data[i] = ""
         for j in range(1, len(split)):
-            data.append(split[j])
+            data[i] += split[j] + " "
 
 def read_docx_file(filename):
     doc = docx.Document(filename)
@@ -108,6 +112,8 @@ def get_data(folder, data_limit): # Get the data from the chosen files. If no fo
 
 def create_frequency_matrix(data): # data is a list of strings. Those strings are the content of the documents
     # Here we create the matrix, which counts how many times each word appears in each document. Since we are only storing integers, we do not need the document titles, as the data is already stored in the same order as the titles
+    if testing:
+        alter_data_for_testing(data)
     correct_data_for_testing(data)
     
     debug.log("Creating frequency matrix")
@@ -171,7 +177,7 @@ def create_complex_matrix(matrix):
     debug.log("Percentage matrix divided by log(n)")
     percentageMatrix = percentageMatrix.sum(axis=1)
     debug.log("Percentage matrix summed")
-    percentageMatrix = 1 + percentageMatrix # Matrika globalnih mer
+    percentageMatrix = 1 - percentageMatrix # Matrika globalnih mer
     
     matrix = np.log(matrix + 1)
     matrix = matrix * percentageMatrix[:,None]
