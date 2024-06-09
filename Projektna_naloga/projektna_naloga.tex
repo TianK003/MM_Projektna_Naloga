@@ -216,6 +216,8 @@ This structured testing strategy ensures that our document retrieval system is t
 \newpage
 
 \section{Results}
+
+\subsection{Automatic testing}
 Here is an overview of the table structures used to present the results of our testing process. These tables provide a clear and concise summary of the system's performance under different conditions, allowing for easy comparison and analysis of the results. The tables are structured as follows:
 \begin{itemize}
   \item \textbf{Rows:} Each row represents a different \( k \) value, where \( k \) is the number of biggest singular values in the SVD decomposition. The values range from 10 to 1000, allowing us to test the system's scalability across different dimensions of space.
@@ -268,10 +270,32 @@ The tables present the results of testing different configurations of the non-op
     \caption{Optimized Solution for Different Values of $k$}
 \end{table}
 
-\newpage
+\subsection{Manual testing}
+We manually tested the optimized solution with the improvement of folding-in new documents and words. This was done on an optimized solution. This was done on a collection of 1000 documents and we slowly added more documents and terms to the system, till it's behaviour became unpredictable and the results seemed random.
+
 \subsection{Discussion}
 Observing the results from both the non-optimized and optimized solutions, several key insights can be drawn:
+\begin{list}{-}{}
+    \item The optimized solution consistently outperforms the non-optimized solution across all tested configurations. This improvement is most notable in scenarios with higher \( k \) values and stricter cosine similarity thresholds.
+    \item The optimized solution demonstrates better scalability and robustness, maintaining higher scores as the dimensionality of the space increases.
+    \item The non-optimized solution shows a decline in performance as the number of singular values \( k \) grows, indicating limitations in handling larger datasets and more complex models.
+    \item Both solutions exhibit a general trend of decreasing scores with stricter cosine similarity thresholds, reflecting the trade-off between precision and recall in document retrieval.    
+\end{list}
 
+We conducted different testing for the optimized solution, showing only the better ones where we flipped the sign in formula for weighting of terms \[ G_i = 1 - \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n} \rightarrow G_i = 1 + \sum_{j} \frac{p_{ij} \log (p_{ij})}{\log n} \] 
+The results showed that the optimized solution with the original formula performed better - this may be due to key words often found in the subject line in our documents.
+
+\bigskip
+\begin{flushleft}
+    \textbf{Discussion on folding-in new documents and terms:}
+\end{flushleft}
+
+
+We have noticed that when folding-in new terms and documents, the system's performance starts declining rapidly after adding around 5\% new documents (relatively to the number of already existing ones). This is due to the fact that the new documents are not as relevant to the existing ones, and the system has a hard time finding the right documents. 
+
+This is a common issue with LSI models, as they are not as effective when dealing with large amounts of new data that is not closely related to the existing data.
+
+Folding-in more than 5\% new documents and/or terms there is a rapid fall off in performance, and behaviour of the system may become unpredictable. The results we got seemed random and we advise against using the system in such a state.
 \newpage
 \section{References and Code}
 
