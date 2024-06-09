@@ -110,9 +110,9 @@ Our initial approach involves the construction of a basic frequency matrix, whic
 
 \bigskip
 \noindent \textbf{Code Utilization and Output:}
-\noindent The code operates by taking \textcolor{red}{a directory of documents} as input and proceeds through several steps:
+\noindent The code operates by taking a collection of documents as input and proceeds through several steps:
 \begin{enumerate}
-    \item \textbf{Matrix Generation:} All text documents within the \textcolor{red}{specified directory} are processed to generate the basic frequency matrix as described above.
+    \item \textbf{Matrix Generation:} All text documents are processed to generate the basic frequency matrix as described above.
     \item \textbf{Document Similarity Analysis:} Using Singular Value Decomposition (SVD), the system identifies and quantifies the similarity between the textual content of the documents based on the transformed matrix data.
     \item \textbf{Query Handling:} The system allows users to input a query, which is then converted into a vector. This vector is used to find documents that are most similar to the query, based on cosine similarity metrics.
 \end{enumerate}
@@ -189,15 +189,13 @@ When adding a new document, we first create a vector $q$ for the document, where
 
         \noindent
         A simple library that we used for reading DOCX files. This allowed us to easily test our implementation on a smaller local dataset.
-    
-    \subsection{Nevem kaj kle sam pac da pokazm da se lahk preuredi}
 
 \subsection{Testing Implementation and Methodology}
 To ensure the accuracy and efficiency of our document retrieval system, thorough testing was conducted using a combination of automatic and manual methods. These methods were designed to address both the performance and the dynamic capabilities of the system under various conditions.
 
 \subsubsection{Automatic Testing}
 \noindent
-Our test data is structured in the form of emails, each including a "subject" line which serves as a concise description of the content. In our testing setup, we removed the subject line from the email to use as a query, reducing bias in testing. The system then retrieves the most relevant emails based on these queries. Results are compared to the original subject lines to assess relevance. The scoring system awards full points if the correct email is the most similar to the query. If the correct email ranks within the top ten of the most similar emails, points are awarded based on its similarity score.
+Our test data is structured in the form of emails, each including a "subject" line which serves as a concise description of the content. In our testing setup, we removed the subject line from the email to use as a query, reducing bias in testing. The system then retrieves the most relevant emails based on these queries. Results are compared to the original subject lines to assess relevance. The scoring system awards full points if the correct email is the most similar to the query. If the correct email ranks within the top ten of the most similar emails, a full point is awarded (our testing shows that similarity score may be quite low even for most similar documents, so a full point is used regardless of the similarity score).
 
 \subsubsection{Manual Testing}
 \noindent
@@ -218,10 +216,15 @@ This structured testing strategy ensures that our document retrieval system is t
 \newpage
 
 \section{Results}
+Here is an overview of the table structures used to present the results of our testing process. These tables provide a clear and concise summary of the system's performance under different conditions, allowing for easy comparison and analysis of the results. The tables are structured as follows:
+\begin{itemize}
+  \item \textbf{Rows:} Each row represents a different \( k \) value, where \( k \) is the number of biggest singular values in the SVD decomposition. The values range from 10 to 1000, allowing us to test the system's scalability across different dimensions of space.
+  \item \textbf{Columns:} The columns represent different threshold values, related to the cosine similarity thresholds used in the retrieval process. These values range from 0.1 to 0.9, affecting how strict the similarity criterion is for considering two documents as closely related.
+  \item \textbf{Cell Values:} Each cell in the table represents the number of points the program scored for each combination of \( k \) and cosine similarity threshold. These values illustrate how the retrieval effectiveness varies with the complexity of the model and the strictness of the similarity threshold.
+\end{itemize}
 
-\subsection{Non-optimized Solution}
-
-The table below presents the results of testing different configurations of the non-optimized solution implemented in the document retrieval system. Each entry in the table corresponds to the output from a series of automated script executions that vary two main parameters: the number of documents $k$ and a threshold value.
+The tables present the results of testing different configurations of the non-optimized and optimized solution implemented in the document retrieval system (results based on testing on 1000 documents).
+\newpage
 
 \begin{table}[h!]
     \centering
@@ -244,17 +247,6 @@ The table below presents the results of testing different configurations of the 
     \caption{Non-optimized Solution for Different Values of $k$}
 \end{table}
 
-\subsubsection{Table Structure}
-\begin{itemize}
-  \item \textbf{Rows:} Each row represents a different \( k \) value, where \( k \) is the number of documents. The \( k \) values range from 10 to 1000, allowing us to test the system's scalability across different document counts
-  \item \textbf{Columns:} The columns represent different threshold values, related to the cosine similarity thresholds used in the retrieval process. These values range from 0.1 to 0.9, affecting how strict the similarity criterion is for considering two documents as closely related.
-  \item \textbf{Cell Values:} Each cell in the table represents the number of points the program scored for each combination of \( k \) and cosine similarity threshold. These values illustrate how the retrieval effectiveness varies with the complexity of the model and the strictness of the similarity threshold.
-
-\end{itemize}
-
-
-\subsection{Optimized Solution}
-
 \begin{table}[h!]
     \centering
     \arrayrulecolor{black} % Set the color of the table lines to black
@@ -276,10 +268,9 @@ The table below presents the results of testing different configurations of the 
     \caption{Optimized Solution for Different Values of $k$}
 \end{table}
 
-\subsection{Additional Improvements}
-
 \newpage
 \subsection{Discussion}
+Observing the results from both the non-optimized and optimized solutions, several key insights can be drawn:
 
 \newpage
 \section{References and Code}
