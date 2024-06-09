@@ -31,7 +31,6 @@ def get_new_data(folder, prev_file_names, data_limit):
             new_file_names.append(all_file_names[i])
     
     if testing:
-        print("-"*50)
         alter_data_for_testing(new_data)
     correct_data_for_testing(new_data)
     
