@@ -7,7 +7,6 @@
 *.out
 *.nav
 *.snm
-projektna_naloga.pdf
 __pycache__/
 Koda/__pycache__/
 Koda/savedMatricies
